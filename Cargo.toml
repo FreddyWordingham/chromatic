@@ -1,0 +1,9 @@
+[package]
+name = "chromatic"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+# num-traits = "0.2.19"
+palette = "0.7.6"
+thiserror = "2.0.12"
