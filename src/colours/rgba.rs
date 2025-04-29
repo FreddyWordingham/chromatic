@@ -71,6 +71,10 @@ where
         + Arithmetics
         + Clamp,
 {
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `t` is commonly used in lerp functions."
+    )]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
         Self(self.0.mix(other.0, t))
@@ -80,17 +84,22 @@ where
 impl<T: Channel> FromStr for Rgba<T> {
     type Err = ColourParseError;
 
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `s` is commonly used in string parsing functions."
+    )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hex = s.trim().strip_prefix('#').unwrap_or(s);
+        let hex = s.trim_start_matches('#');
         if hex.len() != 8 {
             return Err(ColourParseError::InvalidLength(hex.len()));
         }
 
-        let red = u8::from_str_radix(&hex[0..2], 16).map_err(|_| ColourParseError::InvalidHex)?;
-        let green = u8::from_str_radix(&hex[2..4], 16).map_err(|_| ColourParseError::InvalidHex)?;
-        let blue = u8::from_str_radix(&hex[4..6], 16).map_err(|_| ColourParseError::InvalidHex)?;
-        let alpha = u8::from_str_radix(&hex[6..8], 16).map_err(|_| ColourParseError::InvalidHex)?;
+        let rgba = u32::from_str_radix(hex, 16)?;
+        let red = u8::try_from((rgba >> 24i32) & 0xFF)?;
+        let green = u8::try_from((rgba >> 16i32) & 0xFF)?;
+        let blue = u8::try_from((rgba >> 8i32) & 0xFF)?;
+        let alpha = u8::try_from(rgba & 0xFF)?;
 
         Ok(Self::new(
             T::from_u8(red),

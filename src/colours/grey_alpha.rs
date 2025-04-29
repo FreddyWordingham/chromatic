@@ -40,6 +40,10 @@ impl<T> Colour<T> for GreyAlpha<T>
 where
     T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T>,
 {
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `t` is commonly used in lerp functions."
+    )]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
         Self(
@@ -52,14 +56,21 @@ where
 impl<T: Channel> FromStr for GreyAlpha<T> {
     type Err = ColourParseError;
 
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `s` is commonly used in string parsing functions."
+    )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hex = s.trim().strip_prefix('#').unwrap_or(s);
+        let hex = s.trim().trim_start_matches('#');
         if hex.len() != 4 {
             return Err(ColourParseError::InvalidLength(hex.len()));
         }
-        let grey = u8::from_str_radix(&hex[0..2], 16).map_err(|_| ColourParseError::InvalidHex)?;
-        let alpha = u8::from_str_radix(&hex[2..4], 16).map_err(|_| ColourParseError::InvalidHex)?;
+
+        let ga = u16::from_str_radix(hex, 16)?;
+        let grey = u8::try_from(ga >> 8i32)?;
+        let alpha = u8::try_from(ga & 0xFF)?;
+
         Ok(Self(T::from_u8(grey), T::from_u8(alpha)))
     }
 }

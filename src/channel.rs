@@ -17,8 +17,9 @@ macro_rules! impl_channel_for_int {
     ($($t:ty),*) => {
         $(
             impl Channel for $t {
+                #[inline]
                 fn from_u8(value: u8) -> Self {
-                    value as $t
+                    <$t>::from(value)
                 }
             }
         )*
@@ -30,8 +31,9 @@ macro_rules! impl_channel_for_float {
     ($($t:ty),*) => {
         $(
             impl Channel for $t {
+                #[inline]
                 fn from_u8(value: u8) -> Self {
-                    (value as $t) / 255.0
+                    <$t>::from(value) / <$t>::from(255u8)
                 }
             }
         )*
