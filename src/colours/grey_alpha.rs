@@ -1,3 +1,5 @@
+//! Monochrome with alpha channel colour representation.
+
 use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,

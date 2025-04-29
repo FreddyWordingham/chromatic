@@ -1,3 +1,5 @@
+//! Defines common traits for color types.
+
 /// Common trait for all color types
 pub trait Colour<T> {
     /// Linearly interpolate between two colors

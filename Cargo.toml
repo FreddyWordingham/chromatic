@@ -2,8 +2,19 @@
 name = "chromatic"
 version = "0.0.0"
 edition = "2024"
-description = "A small utility library for building and sampling colour maps."
 license = "MIT"
+repository = "https://github.com/FreddyWordingham/chromatic"
+description = "A small utility library for building and sampling colour maps."
+keywords = [
+    "color",
+    "colour",
+    "map",
+    "rgb",
+    "rgba",
+    "greyscale",
+    "greyscalealpha",
+]
+categories = ["graphics", "visualization"]
 
 [dependencies]
 # num-traits = "0.2.19"

@@ -1,3 +1,5 @@
+//! Provides functionality for converting between channel representation types.
+
 /// Helper trait to convert a u8 value to a channel representation type.
 pub trait Channel {
     /// Converts a u8 to the channel representation type.

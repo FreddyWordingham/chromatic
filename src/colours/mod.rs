@@ -1,3 +1,7 @@
+//! ## `Colours` Module
+//!
+//! This module provides different colour types.
+
 mod grey;
 mod grey_alpha;
 mod rgb;

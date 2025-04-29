@@ -1,3 +1,5 @@
+//! Red-Green-Blue colour representation.
+
 use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
