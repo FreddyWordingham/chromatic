@@ -26,15 +26,15 @@ impl<T: Float> Rgb<T> {
     #[inline]
     pub fn new(red: T, green: T, blue: T) -> Self {
         assert!(
-            red >= T::zero() && red <= T::one(),
+            red >= <T as num_traits::Zero>::zero() && red <= <T as num_traits::One>::one(),
             "Red component must be between 0 and 1"
         );
         assert!(
-            green >= T::zero() && green <= T::one(),
+            green >= <T as num_traits::Zero>::zero() && green <= <T as num_traits::One>::one(),
             "Green component must be between 0 and 1"
         );
         assert!(
-            blue >= T::zero() && blue <= T::one(),
+            blue >= <T as num_traits::Zero>::zero() && blue <= <T as num_traits::One>::one(),
             "Blue component must be between 0 and 1"
         );
         Self(LinSrgb::new(red, green, blue))
@@ -80,6 +80,10 @@ where
     )]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
+        assert!(
+            t >= <T as num_traits::Zero>::zero() && t <= <T as num_traits::One>::one(),
+            "Lerp factor must be between 0 and 1"
+        );
         Self(self.0.mix(other.0, t))
     }
 }

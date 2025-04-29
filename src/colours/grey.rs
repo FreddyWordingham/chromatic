@@ -45,6 +45,10 @@ where
     )]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
+        assert!(
+            t >= T::zero() && t <= T::one(),
+            "Lerp factor must be between 0 and 1"
+        );
         Self(self.0 + (other.0 - self.0) * t)
     }
 }

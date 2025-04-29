@@ -91,6 +91,10 @@ where
     )]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
+        assert!(
+            t >= <T as num_traits::Zero>::zero() && t <= <T as num_traits::One>::one(),
+            "Lerp factor must be between 0 and 1"
+        );
         Self(self.0.mix(other.0, t))
     }
 }
