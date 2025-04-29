@@ -97,7 +97,7 @@ impl<T: Float + Channel> FromStr for Rgb<T> {
     )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hex = s.trim_start_matches('#');
+        let hex = s.trim().trim_start_matches('#');
         if hex.len() != 6 {
             return Err(ColourParseError::InvalidLength(hex.len()));
         }
