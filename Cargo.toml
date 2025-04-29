@@ -2,6 +2,7 @@
 name = "chromatic"
 version = "0.0.0"
 edition = "2024"
+description = "A small utility library for building and sampling colour maps."
 license = "MIT"
 
 [dependencies]
