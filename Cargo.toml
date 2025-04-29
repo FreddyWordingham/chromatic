@@ -17,6 +17,6 @@ keywords = [
 categories = ["graphics", "visualization"]
 
 [dependencies]
-# num-traits = "0.2.19"
+num-traits = "0.2.19"
 palette = "0.7.6"
 thiserror = "2.0.12"

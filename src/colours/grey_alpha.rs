@@ -4,41 +4,48 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
+use num_traits::Float;
 
 use crate::{Channel, Colour, ColourParseError};
 
 /// Monochrome with alpha.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-pub struct GreyAlpha<T>(pub T, pub T);
+pub struct GreyAlpha<T: Float>(pub T, pub T);
 
-impl<T> GreyAlpha<T> {
+impl<T: Float> GreyAlpha<T> {
     /// Create a new `GreyAlpha` instance.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of the components are not in the range [0, 1].
     #[inline]
-    pub const fn new(grey: T, alpha: T) -> Self {
+    pub fn new(grey: T, alpha: T) -> Self {
+        assert!(
+            grey >= T::zero() && grey <= T::one(),
+            "Grey component must be between 0 and 1"
+        );
+        assert!(
+            alpha >= T::zero() && alpha <= T::one(),
+            "Alpha component must be between 0 and 1"
+        );
         Self(grey, alpha)
     }
 
     /// Get the grey component.
     #[inline]
-    pub fn g(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.clone()
+    pub const fn g(&self) -> T {
+        self.0
     }
 
     /// Get the alpha component.
     #[inline]
-    pub fn a(&self) -> T
-    where
-        T: Clone,
-    {
-        self.1.clone()
+    pub const fn a(&self) -> T {
+        self.1
     }
 }
 
-impl<T> Colour<T> for GreyAlpha<T>
+impl<T: Float> Colour<T> for GreyAlpha<T>
 where
     T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T>,
 {
@@ -55,7 +62,7 @@ where
     }
 }
 
-impl<T: Channel> FromStr for GreyAlpha<T> {
+impl<T: Float + Channel> FromStr for GreyAlpha<T> {
     type Err = ColourParseError;
 
     #[expect(

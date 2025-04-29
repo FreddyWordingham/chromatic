@@ -4,6 +4,7 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
+use num_traits::Float;
 use palette::{
     LinSrgb, Mix as _,
     num::{Arithmetics, Clamp, One, Real, Zero},
@@ -14,50 +15,59 @@ use crate::{Channel, Colour, ColourParseError};
 /// RGB colour.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-pub struct Rgb<T>(pub LinSrgb<T>);
+pub struct Rgb<T: Float>(pub LinSrgb<T>);
 
-impl<T> Rgb<T> {
+impl<T: Float> Rgb<T> {
     /// Create a new `Rgb` instance.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of the components are not in the range [0, 1].
     #[inline]
-    pub const fn new(red: T, green: T, blue: T) -> Self {
+    pub fn new(red: T, green: T, blue: T) -> Self {
+        assert!(
+            red >= T::zero() && red <= T::one(),
+            "Red component must be between 0 and 1"
+        );
+        assert!(
+            green >= T::zero() && green <= T::one(),
+            "Green component must be between 0 and 1"
+        );
+        assert!(
+            blue >= T::zero() && blue <= T::one(),
+            "Blue component must be between 0 and 1"
+        );
         Self(LinSrgb::new(red, green, blue))
     }
 
     /// Get the red component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn r(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.red.clone()
+    pub fn r(&self) -> T {
+        self.0.red
     }
 
     /// Get the green component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn g(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.green.clone()
+    pub fn g(&self) -> T {
+        self.0.green
     }
 
     /// Get the blue component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn b(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.blue.clone()
+    pub fn b(&self) -> T {
+        self.0.blue
     }
 }
 
-impl<T> Colour<T> for Rgb<T>
+impl<T: Float> Colour<T> for Rgb<T>
 where
     T: Copy
         + Add<Output = T>
         + Sub<Output = T>
         + Mul<Output = T>
-        + Clone
         + Real
         + Zero
         + One
@@ -74,7 +84,7 @@ where
     }
 }
 
-impl<T: Channel> FromStr for Rgb<T> {
+impl<T: Float + Channel> FromStr for Rgb<T> {
     type Err = ColourParseError;
 
     #[expect(

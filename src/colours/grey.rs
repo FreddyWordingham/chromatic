@@ -4,32 +4,38 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
+use num_traits::Float;
 
 use crate::{Channel, Colour, ColourParseError};
 
 /// Monochrome.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-pub struct Grey<T>(pub T);
+pub struct Grey<T: Float>(pub T);
 
-impl<T> Grey<T> {
+impl<T: Float> Grey<T> {
     /// Create a new `Grey` instance.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of the components are not in the range [0, 1].
     #[inline]
-    pub const fn new(grey: T) -> Self {
+    pub fn new(grey: T) -> Self {
+        assert!(
+            grey >= T::zero() && grey <= T::one(),
+            "Grey component must be between 0 and 1"
+        );
         Self(grey)
     }
 
     /// Get the grey component.
     #[inline]
-    pub fn g(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.clone()
+    pub const fn g(&self) -> T {
+        self.0
     }
 }
 
-impl<T> Colour<T> for Grey<T>
+impl<T: Float> Colour<T> for Grey<T>
 where
     T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T>,
 {
@@ -43,7 +49,7 @@ where
     }
 }
 
-impl<T: Channel> FromStr for Grey<T> {
+impl<T: Float + Channel> FromStr for Grey<T> {
     type Err = ColourParseError;
 
     #[expect(

@@ -4,6 +4,7 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
+use num_traits::Float;
 use palette::{
     LinSrgba, Mix as _,
     num::{Arithmetics, Clamp, One, Real, Zero},
@@ -14,59 +15,70 @@ use crate::{Channel, Colour, ColourParseError};
 /// Colour with alpha channel.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
-pub struct Rgba<T>(pub LinSrgba<T>);
+pub struct Rgba<T: Float>(pub LinSrgba<T>);
 
-impl<T> Rgba<T> {
+impl<T: Float> Rgba<T> {
     /// Create a new `Rgba` instance.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of the components are not in the range [0, 1].
     #[inline]
-    pub const fn new(red: T, green: T, blue: T, alpha: T) -> Self {
+    pub fn new(red: T, green: T, blue: T, alpha: T) -> Self {
+        assert!(
+            red >= T::zero() && red <= T::one(),
+            "Red component must be between 0 and 1"
+        );
+        assert!(
+            green >= T::zero() && green <= T::one(),
+            "Green component must be between 0 and 1"
+        );
+        assert!(
+            blue >= T::zero() && blue <= T::one(),
+            "Blue component must be between 0 and 1"
+        );
+        assert!(
+            alpha >= T::zero() && alpha <= T::one(),
+            "Alpha component must be between 0 and 1"
+        );
         Self(LinSrgba::new(red, green, blue, alpha))
     }
 
     /// Get the red component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn r(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.red.clone()
+    pub fn r(&self) -> T {
+        self.0.red
     }
 
     /// Get the green component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn g(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.green.clone()
+    pub fn g(&self) -> T {
+        self.0.green
     }
 
     /// Get the blue component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn b(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.blue.clone()
+    pub fn b(&self) -> T {
+        self.0.blue
     }
 
     /// Get the alpha component.
+    #[expect(clippy::missing_const_for_fn, reason = "This method can not be const.")]
     #[inline]
-    pub fn a(&self) -> T
-    where
-        T: Clone,
-    {
-        self.0.alpha.clone()
+    pub fn a(&self) -> T {
+        self.0.alpha
     }
 }
 
-impl<T> Colour<T> for Rgba<T>
+impl<T: Float> Colour<T> for Rgba<T>
 where
     T: Copy
         + Add<Output = T>
         + Sub<Output = T>
         + Mul<Output = T>
-        + Clone
         + Real
         + Zero
         + One
@@ -83,7 +95,7 @@ where
     }
 }
 
-impl<T: Channel> FromStr for Rgba<T> {
+impl<T: Float + Channel> FromStr for Rgba<T> {
     type Err = ColourParseError;
 
     #[expect(
