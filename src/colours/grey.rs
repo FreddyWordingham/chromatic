@@ -27,4 +27,14 @@ impl<T: Float> Grey<T> {
     pub fn grey(&self) -> T {
         self.0
     }
+
+    /// Set the grey component.
+    #[inline]
+    pub fn set_grey(&self) -> T {
+        assert!(
+            self.0 >= T::zero() && self.0 <= T::one(),
+            "Grey component must be between 0 and 1"
+        );
+        self.0
+    }
 }
