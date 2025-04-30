@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-/// Monochrome.
+/// Grey.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct Grey<T: Float>(T);
@@ -20,5 +20,11 @@ impl<T: Float> Grey<T> {
             "Grey component must be between 0 and 1"
         );
         Self(grey)
+    }
+
+    /// Get the grey component.
+    #[inline]
+    pub fn grey(&self) -> T {
+        self.0
     }
 }
