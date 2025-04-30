@@ -96,13 +96,18 @@
     clippy::integer_division_remainder_used,
     reason = "This crate should not be considered suitable for cryptographic use."
 )]
-#![allow(clippy::mod_module_files, reason = "Prefer to use mod.rs files for consistency.")]
 #![allow(clippy::integer_division, reason = "Too restrictive for this crate.")]
+#![allow(clippy::missing_trait_methods, reason = "Too restrictive for this crate.")]
+#![allow(clippy::mod_module_files, reason = "Prefer to use mod.rs files for consistency.")]
 #![allow(
     clippy::pub_use,
     reason = "It is intended to expose the `Direction` and `Transform` types at the crate level."
 )]
 #![allow(clippy::question_mark_used, reason = "The question mark operator is idiomatic in Rust.")]
+#![allow(
+    clippy::separated_literal_suffix,
+    reason = "Must chose between separated and unseparated literal suffixes."
+)]
 #![allow(
     clippy::unseparated_literal_suffix,
     reason = "Prefer to use attached suffixes for consistency."

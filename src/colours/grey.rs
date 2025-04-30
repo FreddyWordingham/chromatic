@@ -1,5 +1,7 @@
 //! Monochrome colour representation.
 
+// use core::fmt::{Display, Formatter, Result as FmtResult};
+// use num_traits::{Float, FromPrimitive, ToPrimitive};
 use core::fmt::Display;
 use num_traits::Float;
 
@@ -18,10 +20,13 @@ impl<T: Float + Display> Grey<T> {
     pub fn new(mut grey: T) -> Self {
         let tol = T::epsilon();
         if grey < T::zero() - tol || grey > T::one() + tol {
-            panic!("Grey component {} out of [0, 1]±{}", grey, tol);
+            assert!(
+                !(grey < T::zero() - tol || grey > T::one() + tol),
+                "Grey component {grey} out of [0, 1]\u{b1}{tol}"
+            );
         }
         grey = grey.max(T::zero()).min(T::one());
-        Grey(grey)
+        Self(grey)
     }
 
     /// Get the grey component.
@@ -43,17 +48,13 @@ impl<T: Float + Display> Grey<T> {
         );
         self.0 = grey;
     }
-
-    /// Get the tolerance for comparing grey values, which is 1/256.
-    #[inline]
-    fn tolerance() -> T {
-        T::one() / T::from(256).unwrap()
-    }
 }
 
 impl<T: Float + Display> PartialEq for Grey<T> {
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        (self.0 - other.0).abs() <= Self::tolerance()
+        let tol = T::one() / T::from(256_i32).unwrap();
+        (self.0 - other.0).abs() <= tol
     }
 }
