@@ -1,6 +1,7 @@
 //! Monochrome with alpha channel colour representation.
 
 use core::{
+    fmt::{Display, Formatter, Result as FmtResult},
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
@@ -49,20 +50,11 @@ impl<T: Float> Colour<T> for GreyAlpha<T>
 where
     T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T>,
 {
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` is commonly used in lerp functions."
-    )]
+    #[expect(clippy::min_ident_chars, reason = "The variable `t` is commonly used in lerp functions.")]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
-        assert!(
-            t >= T::zero() && t <= T::one(),
-            "Lerp factor must be between 0 and 1"
-        );
-        Self(
-            self.0 + (other.0 - self.0) * t,
-            self.1 + (other.1 - self.1) * t,
-        )
+        assert!(t >= T::zero() && t <= T::one(), "Lerp factor must be between 0 and 1");
+        Self(self.0 + (other.0 - self.0) * t, self.1 + (other.1 - self.1) * t)
     }
 }
 
@@ -85,5 +77,13 @@ impl<T: Float + Channel> FromStr for GreyAlpha<T> {
         let alpha = u8::try_from(ga & 0xFF)?;
 
         Ok(Self(T::from_u8(grey), T::from_u8(alpha)))
+    }
+}
+
+impl<T: Float + Channel> Display for GreyAlpha<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let g = self.g().to_u8().unwrap();
+        let a = self.a().to_u8().unwrap();
+        write!(f, "#{:02X}{:02X}", g, a)
     }
 }

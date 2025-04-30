@@ -1,4 +1,4 @@
-//! Error types for color parsing operations.
+//! Error types for `Colour` parsing operations.
 
 use core::num::{ParseIntError, TryFromIntError};
 use thiserror::Error;

@@ -1,6 +1,7 @@
 //! Red-Green-Blue colour with alpha channel representation.
 
 use core::{
+    fmt::{Display, Formatter, Result as FmtResult},
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
@@ -25,10 +26,7 @@ impl<T: Float> Rgba<T> {
     /// Panics if any of the components are not in the range [0, 1].
     #[inline]
     pub fn new(red: T, green: T, blue: T, alpha: T) -> Self {
-        assert!(
-            red >= T::zero() && red <= T::one(),
-            "Red component must be between 0 and 1"
-        );
+        assert!(red >= T::zero() && red <= T::one(), "Red component must be between 0 and 1");
         assert!(
             green >= T::zero() && green <= T::one(),
             "Green component must be between 0 and 1"
@@ -75,20 +73,9 @@ impl<T: Float> Rgba<T> {
 
 impl<T: Float> Colour<T> for Rgba<T>
 where
-    T: Copy
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>
-        + Real
-        + Zero
-        + One
-        + Arithmetics
-        + Clamp,
+    T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Real + Zero + One + Arithmetics + Clamp,
 {
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` is commonly used in lerp functions."
-    )]
+    #[expect(clippy::min_ident_chars, reason = "The variable `t` is commonly used in lerp functions.")]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
         assert!(
@@ -125,5 +112,15 @@ impl<T: Float + Channel> FromStr for Rgba<T> {
             T::from_u8(blue),
             T::from_u8(alpha),
         ))
+    }
+}
+
+impl<T: Float + Channel> Display for Rgba<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let r = self.r().to_u8().unwrap();
+        let g = self.g().to_u8().unwrap();
+        let b = self.b().to_u8().unwrap();
+        let a = self.a().to_u8().unwrap();
+        write!(f, "#{:02X}{:02X}{:02X}{:02X}", r, g, b, a)
     }
 }

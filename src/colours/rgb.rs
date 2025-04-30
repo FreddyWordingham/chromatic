@@ -1,9 +1,11 @@
 //! Red-Green-Blue colour representation.
 
 use core::{
+    fmt::{Display, Formatter, Result as FmtResult},
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
+use enterpolation::Merge;
 use num_traits::Float;
 use palette::{
     LinSrgb, Mix as _,
@@ -64,20 +66,9 @@ impl<T: Float> Rgb<T> {
 
 impl<T: Float> Colour<T> for Rgb<T>
 where
-    T: Copy
-        + Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>
-        + Real
-        + Zero
-        + One
-        + Arithmetics
-        + Clamp,
+    T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Real + Zero + One + Arithmetics + Clamp,
 {
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` is commonly used in lerp functions."
-    )]
+    #[expect(clippy::min_ident_chars, reason = "The variable `t` is commonly used in lerp functions.")]
     #[inline]
     fn lerp(&self, other: &Self, t: T) -> Self {
         assert!(
@@ -85,6 +76,15 @@ where
             "Lerp factor must be between 0 and 1"
         );
         Self(self.0.mix(other.0, t))
+    }
+}
+
+impl<T: Float + Real + Zero + One + Clamp> Merge<T> for Rgb<T>
+where
+    T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Arithmetics,
+{
+    fn merge(self, other: Self, t: T) -> Self {
+        self.lerp(&other, t)
     }
 }
 
@@ -107,10 +107,15 @@ impl<T: Float + Channel> FromStr for Rgb<T> {
         let green = u8::try_from((rgb >> 8i32) & 0xFF)?;
         let blue = u8::try_from(rgb & 0xFF)?;
 
-        Ok(Self::new(
-            T::from_u8(red),
-            T::from_u8(green),
-            T::from_u8(blue),
-        ))
+        Ok(Self::new(T::from_u8(red), T::from_u8(green), T::from_u8(blue)))
+    }
+}
+
+impl<T: Float + Channel> Display for Rgb<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let r = self.r().to_u8().unwrap();
+        let g = self.g().to_u8().unwrap();
+        let b = self.b().to_u8().unwrap();
+        write!(f, "#{:02X}{:02X}{:02X}", r, g, b)
     }
 }

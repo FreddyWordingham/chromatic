@@ -17,6 +17,7 @@ keywords = [
 categories = ["graphics", "visualization"]
 
 [dependencies]
+enterpolation = "0.2.1"
 num-traits = "0.2.19"
 palette = "0.7.6"
 thiserror = "2.0.12"

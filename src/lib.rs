@@ -87,37 +87,22 @@
 #![deny(variant_size_differences)]
 #![deny(warnings)]
 #![allow(clippy::arbitrary_source_item_ordering, reason = "Unhelpful")]
-#![allow(
-    clippy::arithmetic_side_effects,
-    reason = "Too restrictive for this crate."
-)]
-#![allow(
-    clippy::blanket_clippy_restriction_lints,
-    reason = "More lints are always better."
-)]
+#![allow(clippy::arithmetic_side_effects, reason = "Too restrictive for this crate.")]
+#![allow(clippy::blanket_clippy_restriction_lints, reason = "More lints are always better.")]
 #![allow(clippy::float_arithmetic, reason = "Too restrictive for this crate.")]
-#![allow(
-    clippy::implicit_return,
-    reason = "Implicit returns are idiomatic in Rust."
-)]
+#![allow(clippy::implicit_return, reason = "Implicit returns are idiomatic in Rust.")]
 #![allow(clippy::indexing_slicing, reason = "Too restrictive for this crate.")]
 #![allow(
     clippy::integer_division_remainder_used,
     reason = "This crate should not be considered suitable for cryptographic use."
 )]
-#![allow(
-    clippy::mod_module_files,
-    reason = "Prefer to use mod.rs files for consistency."
-)]
+#![allow(clippy::mod_module_files, reason = "Prefer to use mod.rs files for consistency.")]
 #![allow(clippy::integer_division, reason = "Too restrictive for this crate.")]
 #![allow(
     clippy::pub_use,
     reason = "It is intended to expose the `Direction` and `Transform` types at the crate level."
 )]
-#![allow(
-    clippy::question_mark_used,
-    reason = "The question mark operator is idiomatic in Rust."
-)]
+#![allow(clippy::question_mark_used, reason = "The question mark operator is idiomatic in Rust.")]
 #![allow(
     clippy::unseparated_literal_suffix,
     reason = "Prefer to use attached suffixes for consistency."
@@ -125,10 +110,14 @@
 
 mod channel;
 mod colour;
+mod colour_map;
+mod colour_map_error;
 mod colour_parse_error;
 mod colours;
 
 pub use channel::Channel;
 pub use colour::Colour;
+pub use colour_map::ColourMap;
+pub use colour_map_error::ColourMapError;
 pub use colour_parse_error::ColourParseError;
 pub use colours::{Grey, GreyAlpha, Rgb, Rgba};
