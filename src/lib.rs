@@ -72,7 +72,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(unstable_features)]
 #![deny(unused_assignments)]
-// #![deny(unused_crate_dependencies)] // False flags dev-dependencies
+#![deny(unused_crate_dependencies)] // False flags dev-dependencies
 #![deny(unused_extern_crates)]
 #![deny(unused_import_braces)]
 #![deny(unused_imports)]
@@ -108,14 +108,6 @@
     reason = "Prefer to use attached suffixes for consistency."
 )]
 
-mod colour;
-mod colour_map;
-mod colour_map_error;
-mod colour_parse_error;
 mod colours;
 
-pub use colour::Colour;
-pub use colour_map::ColourMap;
-pub use colour_map_error::ColourMapError;
-pub use colour_parse_error::ColourParseError;
-pub use colours::{Grey, GreyAlpha, Rgb, Rgba};
+pub use colours::Grey;
