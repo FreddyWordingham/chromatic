@@ -84,14 +84,14 @@ fn test_grey_new_edge_cases() {
 
 // This should panic since value is less than 0.
 #[test]
-#[should_panic(expected = "Grey component must be between 0 and 1")]
+#[should_panic(expected = "Grey component")]
 fn test_grey_new_below_min() {
     Grey::<f32>::new(-0.1);
 }
 
 // This should panic since value is greater than 1.
 #[test]
-#[should_panic(expected = "Grey component must be between 0 and 1")]
+#[should_panic(expected = "Grey component")]
 fn test_grey_new_above_max() {
     Grey::<f32>::new(1.1);
 }

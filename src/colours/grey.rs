@@ -1,5 +1,6 @@
 //! Monochrome colour representation.
 
+use core::fmt::Display;
 use num_traits::Float;
 
 /// Grey.
@@ -7,48 +8,52 @@ use num_traits::Float;
 #[non_exhaustive]
 pub struct Grey<T: Float>(T);
 
-impl<T: Float> Grey<T> {
+impl<T: Float + Display> Grey<T> {
     /// Create a new `Grey` instance.
     ///
     /// # Panics
     ///
-    /// Panics if any of the components are not in the range [0, 1].
+    /// Panics if the component is not in [0, 1].
     #[inline]
-    pub fn new(grey: T) -> Self {
-        assert!(
-            grey >= T::zero() && grey <= T::one(),
-            "Grey component must be between 0 and 1"
-        );
-        Self(grey)
+    pub fn new(mut grey: T) -> Self {
+        let tol = T::epsilon();
+        if grey < T::zero() - tol || grey > T::one() + tol {
+            panic!("Grey component {} out of [0, 1]±{}", grey, tol);
+        }
+        grey = grey.max(T::zero()).min(T::one());
+        Grey(grey)
     }
 
     /// Get the grey component.
     #[inline]
-    pub fn grey(&self) -> T {
+    pub const fn grey(&self) -> T {
         self.0
     }
 
     /// Set the grey component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [0, 1].
     #[inline]
-    pub fn set_grey(&self) -> T {
+    pub fn set_grey(&mut self, grey: T) {
         assert!(
-            self.0 >= T::zero() && self.0 <= T::one(),
+            grey >= T::zero() && grey <= T::one(),
             "Grey component must be between 0 and 1"
         );
-        self.0
+        self.0 = grey;
     }
 
-    /// Get the tolerance for comparing grey values.
+    /// Get the tolerance for comparing grey values, which is 1/256.
     #[inline]
-    pub fn tolerance() -> T {
+    fn tolerance() -> T {
         T::one() / T::from(256).unwrap()
     }
 }
 
-impl<T: Float> PartialEq for Grey<T> {
+impl<T: Float + Display> PartialEq for Grey<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.0 - other.0).abs() <= Self::tolerance()
     }
 }
-
-impl<T: Float> Eq for Grey<T> {}
