@@ -108,14 +108,12 @@
     reason = "Prefer to use attached suffixes for consistency."
 )]
 
-mod channel;
 mod colour;
 mod colour_map;
 mod colour_map_error;
 mod colour_parse_error;
 mod colours;
 
-pub use channel::Channel;
 pub use colour::Colour;
 pub use colour_map::ColourMap;
 pub use colour_map_error::ColourMapError;

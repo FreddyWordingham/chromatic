@@ -5,9 +5,9 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
-use num_traits::Float;
+use num_traits::{Float, FromPrimitive};
 
-use crate::{Channel, Colour, ColourParseError};
+use crate::{Colour, ColourParseError};
 
 /// Monochrome with alpha.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -58,32 +58,36 @@ where
     }
 }
 
-impl<T: Float + Channel> FromStr for GreyAlpha<T> {
+impl<T> FromStr for GreyAlpha<T>
+where
+    T: Float + FromPrimitive,
+{
     type Err = ColourParseError;
 
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `s` is commonly used in string parsing functions."
-    )]
-    #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hex = s.trim().trim_start_matches('#');
         if hex.len() != 4 {
             return Err(ColourParseError::InvalidLength(hex.len()));
         }
 
-        let ga = u16::from_str_radix(hex, 16)?;
-        let grey = u8::try_from(ga >> 8i32)?;
-        let alpha = u8::try_from(ga & 0xFF)?;
+        // parse two hex bytes
+        let g = u8::from_str_radix(&hex[0..2], 16)?;
+        let a = u8::from_str_radix(&hex[2..4], 16)?;
 
-        Ok(Self(T::from_u8(grey), T::from_u8(alpha)))
+        // cast into T
+        let scale = T::from_u8(255).ok_or(ColourParseError::ConversionFailed)?;
+        let gt = T::from_u8(g).ok_or(ColourParseError::ConversionFailed)? / scale;
+        let at = T::from_u8(a).ok_or(ColourParseError::ConversionFailed)? / scale;
+
+        Ok(GreyAlpha(gt, at))
     }
 }
 
-impl<T: Float + Channel> Display for GreyAlpha<T> {
+impl<T: Float> Display for GreyAlpha<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let g = self.g().to_u8().unwrap();
-        let a = self.a().to_u8().unwrap();
+        let scale = T::from(255).unwrap();
+        let g = (scale * self.g()).to_u8().unwrap();
+        let a = (scale * self.a()).to_u8().unwrap();
         write!(f, "#{:02X}{:02X}", g, a)
     }
 }

@@ -5,9 +5,9 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
-use num_traits::Float;
+use num_traits::{Float, FromPrimitive};
 
-use crate::{Channel, Colour, ColourParseError};
+use crate::{Colour, ColourParseError};
 
 /// Monochrome.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,28 +48,34 @@ where
     }
 }
 
-impl<T: Float + Channel> FromStr for Grey<T> {
+impl<T> FromStr for Grey<T>
+where
+    T: Float + FromPrimitive,
+{
     type Err = ColourParseError;
 
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `s` is commonly used in string parsing functions."
-    )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hex = s.trim().trim_start_matches('#');
-        if hex.len() != 2 {
-            return Err(ColourParseError::InvalidLength(hex.len()));
-        }
-
-        let grey = u8::from_str_radix(hex, 16)?;
-        Ok(Self::new(T::from_u8(grey)))
+        // support "#G" or "#GG"
+        let byte = match hex.len() {
+            1 => {
+                let v = u8::from_str_radix(hex, 16)?;
+                v.saturating_mul(17)
+            }
+            2 => u8::from_str_radix(hex, 16)?,
+            len => return Err(ColourParseError::InvalidLength(len)),
+        };
+        let scale = T::from_u8(255).unwrap();
+        let gt = T::from_u8(byte).unwrap() / scale;
+        Ok(Grey::new(gt))
     }
 }
 
-impl<T: Float + Channel> Display for Grey<T> {
+impl<T: Float> Display for Grey<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let g = self.g().to_u8().unwrap();
+        let scale = T::from(255).unwrap();
+        let g = (scale * self.g()).to_u8().unwrap();
         write!(f, "#{:02X}", g)
     }
 }

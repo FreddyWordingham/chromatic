@@ -5,13 +5,13 @@ use core::{
     ops::{Add, Mul, Sub},
     str::FromStr,
 };
-use num_traits::Float;
+use num_traits::{Float, FromPrimitive};
 use palette::{
     LinSrgba, Mix as _,
     num::{Arithmetics, Clamp, One, Real, Zero},
 };
 
-use crate::{Channel, Colour, ColourParseError};
+use crate::{Colour, ColourParseError};
 
 /// Colour with alpha channel.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -86,36 +86,55 @@ where
     }
 }
 
-impl<T: Float + Channel> FromStr for Rgba<T> {
+impl<T> FromStr for Rgba<T>
+where
+    T: Float + FromPrimitive,
+{
     type Err = ColourParseError;
 
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `s` is commonly used in string parsing functions."
-    )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hex = s.trim().trim_start_matches('#');
-        if hex.len() != 8 {
-            return Err(ColourParseError::InvalidLength(hex.len()));
-        }
+        // support "#RGBA" or "#RRGGBBAA"
+        let (r, g, b, a) = match hex.len() {
+            4 => {
+                // one nibble per channel, expand with *17
+                let nibbles: Vec<u8> = hex
+                    .chars()
+                    .map(|c| u8::from_str_radix(&c.to_string(), 16))
+                    .collect::<Result<_, _>>()?;
+                (
+                    nibbles[0].saturating_mul(17),
+                    nibbles[1].saturating_mul(17),
+                    nibbles[2].saturating_mul(17),
+                    nibbles[3].saturating_mul(17),
+                )
+            }
+            8 => {
+                // two hex digits per channel
+                let rgba = u32::from_str_radix(hex, 16)?;
+                (
+                    ((rgba >> 24) & 0xFF) as u8,
+                    ((rgba >> 16) & 0xFF) as u8,
+                    ((rgba >> 8) & 0xFF) as u8,
+                    (rgba & 0xFF) as u8,
+                )
+            }
+            len => return Err(ColourParseError::InvalidLength(len)),
+        };
 
-        let rgba = u32::from_str_radix(hex, 16)?;
-        let red = u8::try_from((rgba >> 24i32) & 0xFF)?;
-        let green = u8::try_from((rgba >> 16i32) & 0xFF)?;
-        let blue = u8::try_from((rgba >> 8i32) & 0xFF)?;
-        let alpha = u8::try_from(rgba & 0xFF)?;
+        // scale into [0,1] in T
+        let scale = T::from_u8(255).unwrap();
+        let rt = T::from_u8(r).unwrap() / scale;
+        let gt = T::from_u8(g).unwrap() / scale;
+        let bt = T::from_u8(b).unwrap() / scale;
+        let at = T::from_u8(a).unwrap() / scale;
 
-        Ok(Self::new(
-            T::from_u8(red),
-            T::from_u8(green),
-            T::from_u8(blue),
-            T::from_u8(alpha),
-        ))
+        Ok(Rgba::new(rt, gt, bt, at))
     }
 }
 
-impl<T: Float + Channel> Display for Rgba<T> {
+impl<T: Float> Display for Rgba<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let r = self.r().to_u8().unwrap();
         let g = self.g().to_u8().unwrap();

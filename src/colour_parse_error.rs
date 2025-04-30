@@ -1,6 +1,6 @@
 //! Error types for `Colour` parsing operations.
 
-use core::num::{ParseIntError, TryFromIntError};
+use core::num::ParseIntError;
 use thiserror::Error;
 
 /// Error type for parsing colour strings.
@@ -20,8 +20,8 @@ pub enum ColourParseError {
     InvalidHex(#[from] ParseIntError),
 
     /// Checked numeric conversion failed (should never happen)
-    #[error("Component overflow: {0}")]
-    ConversionFailed(#[from] TryFromIntError),
+    #[error("Component conversion failed")]
+    ConversionFailed,
 
     /// Error when gradient creation fails.
     #[error("Failed to create gradient")]

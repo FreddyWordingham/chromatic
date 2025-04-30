@@ -12,7 +12,7 @@ use palette::{
     num::{Arithmetics, Clamp, One, Real, Zero},
 };
 
-use crate::{Channel, Colour, ColourParseError};
+use crate::{Colour, ColourParseError};
 
 /// RGB colour.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -88,30 +88,42 @@ where
     }
 }
 
-impl<T: Float + Channel> FromStr for Rgb<T> {
+impl<T> FromStr for Rgb<T>
+where
+    T: Float,
+{
     type Err = ColourParseError;
 
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `s` is commonly used in string parsing functions."
-    )]
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hex = s.trim().trim_start_matches('#');
-        if hex.len() != 6 {
-            return Err(ColourParseError::InvalidLength(hex.len()));
-        }
+        // support "#RGB" or "#RRGGBB"
+        let (r, g, b) = match hex.len() {
+            3 => {
+                // expand each nibble: "FAB" -> "FF","AA","BB"
+                let chars: Vec<u8> = hex
+                    .bytes()
+                    .map(|c| u8::from_str_radix(std::str::from_utf8(&[c]).unwrap(), 16))
+                    .collect::<Result<_, _>>()?;
+                (chars[0] * 17, chars[1] * 17, chars[2] * 17)
+            }
+            6 => {
+                let rgb = u32::from_str_radix(hex, 16)?;
+                (((rgb >> 16) & 0xFF) as u8, ((rgb >> 8) & 0xFF) as u8, (rgb & 0xFF) as u8)
+            }
+            len => return Err(ColourParseError::InvalidLength(len)),
+        };
 
-        let rgb = u32::from_str_radix(hex, 16)?;
-        let red = u8::try_from((rgb >> 16i32) & 0xFF)?;
-        let green = u8::try_from((rgb >> 8i32) & 0xFF)?;
-        let blue = u8::try_from(rgb & 0xFF)?;
+        let scale = T::from(255).unwrap();
+        let rt = T::from(r).unwrap() / scale;
+        let gt = T::from(g).unwrap() / scale;
+        let bt = T::from(b).unwrap() / scale;
 
-        Ok(Self::new(T::from_u8(red), T::from_u8(green), T::from_u8(blue)))
+        Ok(Rgb::new(rt, gt, bt))
     }
 }
 
-impl<T: Float + Channel> Display for Rgb<T> {
+impl<T: Float> Display for Rgb<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let r = self.r().to_u8().unwrap();
         let g = self.g().to_u8().unwrap();
