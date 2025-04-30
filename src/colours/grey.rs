@@ -37,4 +37,18 @@ impl<T: Float> Grey<T> {
         );
         self.0
     }
+
+    /// Get the tolerance for comparing grey values.
+    #[inline]
+    pub fn tolerance() -> T {
+        T::one() / T::from(256).unwrap()
+    }
 }
+
+impl<T: Float> PartialEq for Grey<T> {
+    fn eq(&self, other: &Self) -> bool {
+        (self.0 - other.0).abs() <= Self::tolerance()
+    }
+}
+
+impl<T: Float> Eq for Grey<T> {}
