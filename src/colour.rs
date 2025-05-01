@@ -52,10 +52,6 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
         clippy::min_ident_chars,
         reason = "The variable `t` for an interpolation factor is idiomatic."
     )]
-    #[expect(
-        clippy::missing_asserts_for_indexing,
-        reason = "The indexing is safe due to the checks above."
-    )]
     #[must_use]
     #[inline]
     fn mix(colours: &[Self], weights: &[T]) -> Self

@@ -102,25 +102,19 @@ where
         C::lerp(&self.colours[segment_index], &self.colours[segment_index + 1], segment_t)
     }
 
-    /// Get the number of control points in the colour map.
+    /// Get the number of control points in the `ColourMap`.
+    #[expect(clippy::len_without_is_empty, reason = "A colour map can never be empty.")]
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "`Vec::<T, A>::len` is not yet stable as a const fn."
+    )]
     #[must_use]
     #[inline]
     pub fn len(&self) -> usize {
         self.colours.len()
     }
 
-    /// Check if the colour map is empty.
-    #[must_use]
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.colours.is_empty()
-    }
-
     /// Get a reference to the colours in the map.
-    #[expect(
-        clippy::missing_const_for_fn,
-        reason = "Cannot perform non-const deref coercion on `std::vec::Vec<C>` in constant functions."
-    )]
     #[must_use]
     #[inline]
     pub fn colours(&self) -> &[C] {
@@ -128,10 +122,6 @@ where
     }
 
     /// Get a reference to the positions in the map.
-    #[expect(
-        clippy::missing_const_for_fn,
-        reason = "Cannot perform non-const deref coercion on `std::vec::Vec<C>` in constant functions."
-    )]
     #[must_use]
     #[inline]
     pub fn positions(&self) -> &[T] {

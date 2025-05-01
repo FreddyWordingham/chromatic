@@ -66,15 +66,6 @@ fn test_uneven_distribution() {
 }
 
 #[test]
-fn test_is_empty() {
-    let colours = vec![Grey::new(0.0), Grey::new(1.0)];
-    let positions = vec![0.0, 1.0];
-    let colour_map = ColourMap::new(&colours, &positions);
-
-    assert!(!colour_map.is_empty());
-}
-
-#[test]
 fn test_with_different_numeric_types() {
     // Test with f32
     let colours_f32 = vec![Grey::<f32>::new(0.0), Grey::<f32>::new(1.0)];

@@ -67,6 +67,8 @@ impl<T: Display + AddAssign + Float> Grey<T> {
         );
         self.0 = grey;
     }
+
+    // #[inline]
 }
 
 impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
