@@ -17,6 +17,7 @@ keywords = [
 categories = ["graphics", "visualization"]
 
 [dependencies]
+image = "0.25.6"
 num-traits = "0.2.19"
 
 [dev-dependencies]

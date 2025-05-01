@@ -20,6 +20,8 @@ pub enum ParseGreyError<E> {
     ParseHex(ParseIntError),
     /// Value out of range.
     OutOfRange,
+    /// Invalid format.
+    InvalidFormat,
 }
 
 /// Monochrome colour.
@@ -42,7 +44,7 @@ impl<T: Display + AddAssign + Float> Grey<T> {
                 "Grey component {grey} out of [0, 1]\u{b1}{tolerance}."
             );
         }
-        grey = grey.max(T::zero()).min(T::one());
+        grey = grey.clamp(T::zero(), T::one());
         Self(grey)
     }
 
@@ -69,8 +71,8 @@ impl<T: Display + AddAssign + Float> Grey<T> {
 
 impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
     #[inline]
-    fn num_components(&self) -> usize {
-        1
+    fn from_components(components: [T; 1]) -> Self {
+        Self::new(components[0])
     }
 
     #[inline]
@@ -134,15 +136,31 @@ where
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(hex) = s.trim().strip_prefix('#') {
-            // parse hex 0–F into u8
-            let value = u8::from_str_radix(hex, 16).map_err(ParseGreyError::ParseHex)?;
-            // scale from 0–15 into 0.0–1.0
-            let grey = T::from(value).ok_or(ParseGreyError::OutOfRange)? / T::from(15).unwrap();
-            Ok(Self::new(grey))
+            match hex.len() {
+                // Short form: #G
+                1 => {
+                    let value = u8::from_str_radix(hex, 16).map_err(ParseGreyError::ParseHex)?;
+                    // Expand short form (e.g., #F becomes #FF)
+                    let grey = T::from(value * 17).ok_or(ParseGreyError::OutOfRange)? / T::from(255).unwrap();
+                    Ok(Self::new(grey))
+                }
+                // Long form: #GG
+                2 => {
+                    let value = u8::from_str_radix(hex, 16).map_err(ParseGreyError::ParseHex)?;
+                    let grey = T::from(value).ok_or(ParseGreyError::OutOfRange)? / T::from(255).unwrap();
+                    Ok(Self::new(grey))
+                }
+                _ => Err(ParseGreyError::InvalidFormat),
+            }
         } else {
-            // parse as float
-            let f = s.parse::<T>().map_err(ParseGreyError::ParseFloat)?;
-            Ok(Self::new(f))
+            // Parse as comma-separated float values
+            let parts: Vec<&str> = s.split(',').collect();
+            if parts.len() != 1 {
+                return Err(ParseGreyError::InvalidFormat);
+            }
+
+            let grey = parts[0].trim().parse::<T>().map_err(ParseGreyError::ParseFloat)?;
+            Ok(Self::new(grey))
         }
     }
 }
@@ -157,7 +175,7 @@ where
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(15_i32).unwrap();
-        let index = (self.0 * max).round().to_u8().unwrap();
-        write!(f, "#{index:X}")
+        let grey = (self.0 * max).round().to_u8().unwrap();
+        write!(f, "#{grey:X}")
     }
 }

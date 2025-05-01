@@ -50,8 +50,8 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
                 "Alpha component {alpha} out of [0, 1]\u{b1}{tolerance}."
             );
         }
-        grey = grey.max(T::zero()).min(T::one());
-        alpha = alpha.max(T::zero()).min(T::one());
+        grey = grey.clamp(T::zero(), T::one());
+        alpha = alpha.clamp(T::zero(), T::one());
         Self(grey, alpha)
     }
 
@@ -98,8 +98,8 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
 
 impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     #[inline]
-    fn num_components(&self) -> usize {
-        2
+    fn from_components(components: [T; 2]) -> Self {
+        Self::new(components[0], components[1])
     }
 
     #[inline]
@@ -169,24 +169,43 @@ where
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(hex) = s.trim().strip_prefix('#') {
-            // Check if we have a valid 2-character hex string
-            if hex.len() != 2 {
-                return Err(ParseGreyAlphaError::InvalidFormat);
+            match hex.len() {
+                // Short form: #GA
+                2 => {
+                    let mut chars = hex.chars();
+                    let grey_digit = chars.next().unwrap();
+                    let alpha_digit = chars.next().unwrap();
+
+                    let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+                    let alpha_value =
+                        u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+
+                    // Expand short form (e.g., #FA becomes #FFAA)
+                    let grey = T::from(grey_value * 17).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+                    let alpha = T::from(alpha_value * 17).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+
+                    Ok(Self::new(grey, alpha))
+                }
+                // Long form: #GGAA
+                4 => {
+                    let mut chars = hex.chars();
+                    let g1 = chars.next().unwrap().to_string();
+                    let g2 = chars.next().unwrap().to_string();
+                    let a1 = chars.next().unwrap().to_string();
+                    let a2 = chars.next().unwrap().to_string();
+
+                    let grey_value = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+                    let alpha_value = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+
+                    let grey = T::from(grey_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+                    let alpha = T::from(alpha_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+
+                    Ok(Self::new(grey, alpha))
+                }
+                _ => Err(ParseGreyAlphaError::InvalidFormat),
             }
-
-            let mut chars = hex.chars();
-            let grey_digit = chars.next().unwrap();
-            let alpha_digit = chars.next().unwrap();
-            let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
-            let alpha_value = u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
-
-            // scale from 0–15 into 0.0–1.0
-            let grey = T::from(grey_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(15).unwrap();
-            let alpha = T::from(alpha_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(15).unwrap();
-
-            Ok(Self::new(grey, alpha))
         } else {
-            // Look for two comma-separated float values
+            // Look for comma-separated float values
             let parts: Vec<&str> = s.split(',').collect();
             if parts.len() != 2 {
                 return Err(ParseGreyAlphaError::InvalidFormat);
@@ -210,8 +229,8 @@ where
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(15_i32).unwrap();
-        let grey_index = (self.0 * max).round().to_u8().unwrap();
-        let alpha_index = (self.1 * max).round().to_u8().unwrap();
-        write!(f, "#{grey_index:X}{alpha_index:X}")
+        let grey = (self.0 * max).round().to_u8().unwrap();
+        let alpha = (self.1 * max).round().to_u8().unwrap();
+        write!(f, "#{grey:X}{alpha:X}")
     }
 }

@@ -7,9 +7,12 @@ use num_traits::Float;
 
 /// Common trait for all colour types.
 pub trait Colour<T: AddAssign + Float, const N: usize> {
-    /// Get the number of components in the colour.
+    /// Number of components in the colour.
+    const NUM_COMPONENTS: usize = N;
+
+    /// Create a new colour from components.
     #[must_use]
-    fn num_components(&self) -> usize;
+    fn from_components(components: [T; N]) -> Self;
 
     /// Get the components of the colour as a slice.
     #[must_use]
@@ -49,7 +52,12 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
         clippy::min_ident_chars,
         reason = "The variable `t` for an interpolation factor is idiomatic."
     )]
+    #[expect(
+        clippy::missing_asserts_for_indexing,
+        reason = "The indexing is safe due to the checks above."
+    )]
     #[must_use]
+    #[inline]
     fn mix(colours: &[Self], weights: &[T]) -> Self
     where
         Self: Sized + Clone,

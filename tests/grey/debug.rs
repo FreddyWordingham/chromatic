@@ -17,9 +17,6 @@ fn test_grey_debug_output() {
     // Debug format should contain the value
     let debug_str = format!("{:?}", grey);
     assert!(debug_str.contains("Grey"));
-
-    // Don't test exact format as it might change,
-    // just ensure it contains necessary information
 }
 
 #[test]
