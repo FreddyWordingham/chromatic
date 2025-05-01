@@ -1,0 +1,141 @@
+// use chromatic::Grey;
+// use image::{GrayImage, ImageBuffer, Luma};
+// use ndarray::{Array2, s};
+// use std::{f32::consts::PI, path::Path};
+
+// fn main() -> Result<(), Box<dyn std::error::Error>> {
+//     // Create several example images with different patterns
+//     let size = 512;
+
+//     // Create different patterns
+//     let gradient = create_gradient(size);
+//     let circle = create_circle(size);
+//     let checkerboard = create_checkerboard(size, 32);
+//     let waves = create_sine_waves(size);
+
+//     // Save all patterns
+//     save_grey_array(&gradient, "gradient.png")?;
+//     save_grey_array(&circle, "circle.png")?;
+//     save_grey_array(&checkerboard, "checkerboard.png")?;
+//     save_grey_array(&waves, "waves.png")?;
+
+//     // Create a combined image with all patterns
+//     let mut combined = Array2::<Grey<f32>>::from_elem((size, size), Grey::new(0.0));
+
+//     // Split the image into 4 quadrants
+//     let half = size / 2;
+//     combined
+//         .slice_mut(s![0..half, 0..half])
+//         .assign(&gradient.slice(s![0..half, 0..half]));
+//     combined
+//         .slice_mut(s![0..half, half..])
+//         .assign(&circle.slice(s![0..half, 0..half]));
+//     combined
+//         .slice_mut(s![half.., 0..half])
+//         .assign(&checkerboard.slice(s![0..half, 0..half]));
+//     combined
+//         .slice_mut(s![half.., half..])
+//         .assign(&waves.slice(s![0..half, 0..half]));
+
+//     save_grey_array(&combined, "combined.png")?;
+
+//     println!("All images saved successfully!");
+//     Ok(())
+// }
+
+// // Simple diagonal gradient
+// fn create_gradient(size: usize) -> Array2<Grey<f32>> {
+//     let mut pattern = Array2::<Grey<f32>>::from_elem((size, size), Grey::new(0.0));
+
+//     for y in 0..size {
+//         for x in 0..size {
+//             let value = (x + y) as f32 / (2.0 * size as f32);
+//             pattern[[y, x]] = Grey::new(value);
+//         }
+//     }
+
+//     pattern
+// }
+
+// // Circular gradient from center
+// fn create_circle(size: usize) -> Array2<Grey<f32>> {
+//     let mut pattern = Array2::<Grey<f32>>::from_elem((size, size), Grey::new(0.0));
+
+//     let center_x = size as f32 / 2.0;
+//     let center_y = size as f32 / 2.0;
+//     let radius = size as f32 / 2.0;
+
+//     for y in 0..size {
+//         for x in 0..size {
+//             let dx = (x as f32 - center_x) / radius;
+//             let dy = (y as f32 - center_y) / radius;
+//             let distance = (dx.powi(2) + dy.powi(2)).sqrt();
+
+//             // Create a circular pattern
+//             let value = (1.0 - distance).max(0.0);
+//             pattern[[y, x]] = Grey::new(value);
+//         }
+//     }
+
+//     pattern
+// }
+
+// // Checkerboard pattern
+// fn create_checkerboard(size: usize, cell_size: usize) -> Array2<Grey<f32>> {
+//     let mut pattern = Array2::<Grey<f32>>::from_elem((size, size), Grey::new(0.0));
+
+//     for y in 0..size {
+//         for x in 0..size {
+//             let cell_x = x / cell_size;
+//             let cell_y = y / cell_size;
+
+//             // Alternating cells
+//             let value = if (cell_x + cell_y) % 2 == 0 { 1.0 } else { 0.0 };
+//             pattern[[y, x]] = Grey::new(value);
+//         }
+//     }
+
+//     pattern
+// }
+
+// // Sine wave pattern
+// fn create_sine_waves(size: usize) -> Array2<Grey<f32>> {
+//     let mut pattern = Array2::<Grey<f32>>::from_elem((size, size), Grey::new(0.0));
+
+//     for y in 0..size {
+//         for x in 0..size {
+//             // Create a pattern with two overlapping sine waves
+//             let x_normalized = x as f32 / size as f32;
+//             let y_normalized = y as f32 / size as f32;
+
+//             let wave1 = (x_normalized * 10.0 * PI).sin() * 0.5 + 0.5;
+//             let wave2 = (y_normalized * 10.0 * PI).sin() * 0.5 + 0.5;
+
+//             // Mix the two waves
+//             let value = wave1 * wave2;
+//             pattern[[y, x]] = Grey::new(value);
+//         }
+//     }
+
+//     pattern
+// }
+
+// // Convert and save an Array2<Grey<f32>> to a PNG file
+// fn save_grey_array(array: &Array2<Grey<f32>>, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
+//     let (height, width) = array.dim();
+
+//     // Create a new GrayImage with the same dimensions
+//     let mut img = ImageBuffer::new(width as u32, height as u32);
+
+//     // Copy the data from the array to the image
+//     for y in 0..height {
+//         for x in 0..width {
+//             // Convert Grey<f32> (0.0-1.0) to u8 (0-255)
+//             let pixel_value = array[[y, x]].to_bytes()[0];
+//             img.put_pixel(x as u32, y as u32, Luma([pixel_value]));
+//         }
+//     }
+
+//     img.save(filename)?;
+//     Ok(())
+// }

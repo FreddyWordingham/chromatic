@@ -1,6 +1,5 @@
 use chromatic::Grey;
 
-// Tests for the mix_fold method.
 #[test]
 fn test_grey_mix_fold_basic() {
     let grey1 = Grey::<f32>::new(0.0); // Black

@@ -72,7 +72,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(unstable_features)]
 #![deny(unused_assignments)]
-#![deny(unused_crate_dependencies)] // False flags dev-dependencies
+// #![deny(unused_crate_dependencies)] // False flags dev-dependencies
 #![deny(unused_extern_crates)]
 #![deny(unused_import_braces)]
 #![deny(unused_imports)]
@@ -115,4 +115,4 @@
 
 mod colours;
 
-pub use colours::{Grey, ParseGreyError};
+pub use colours::{Grey, GreyAlpha, ParseGreyAlphaError, ParseGreyError};
