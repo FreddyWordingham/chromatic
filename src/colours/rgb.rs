@@ -118,186 +118,6 @@ impl<T: Display + AddAssign + Float> Rgb<T> {
         );
         self.2 = blue;
     }
-
-    /// Linear interpolate between two RGB colours.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the interpolation factor is not in [0, 1].
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[inline]
-    pub fn gamma_lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
-        Self::new(
-            lhs.red() * (T::one() - t) + rhs.red() * t,
-            lhs.green() * (T::one() - t) + rhs.green() * t,
-            lhs.blue() * (T::one() - t) + rhs.blue() * t,
-        )
-    }
-
-    /// Convert RGB to XYZ colour space
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn rgb_to_xyz(rgb: &Self) -> [T; 3] {
-        // Convert from gamma-corrected RGB to linear RGB
-        let red = Self::gamma_to_linear(rgb.red());
-        let green = Self::gamma_to_linear(rgb.green());
-        let blue = Self::gamma_to_linear(rgb.blue());
-
-        // Convert to XYZ using sRGB standard matrix
-        let x = red * T::from(0.4124564).unwrap() + green * T::from(0.3575761).unwrap() + blue * T::from(0.1804375).unwrap();
-        let y = red * T::from(0.2126729).unwrap() + green * T::from(0.7151522).unwrap() + blue * T::from(0.0721750).unwrap();
-        let z = red * T::from(0.0193339).unwrap() + green * T::from(0.1191920).unwrap() + blue * T::from(0.9503041).unwrap();
-
-        [x, y, z]
-    }
-
-    /// Convert XYZ to Lab colour space
-    #[expect(
-        clippy::many_single_char_names,
-        reason = "The variables `xyz` and `lab` are idiomatic for colour spaces."
-    )]
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variables `xyz` and `lab` are idiomatic for colour spaces."
-    )]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn xyz_to_lab(xyz: &[T; 3]) -> [T; 3] {
-        // Reference white (D65)
-        let xn = T::from(0.95047).unwrap();
-        let yn = T::from(1.0).unwrap();
-        let zn = T::from(1.08883).unwrap();
-
-        // Normalized XYZ
-        let x = Self::lab_f(xyz[0] / xn);
-        let y = Self::lab_f(xyz[1] / yn);
-        let z = Self::lab_f(xyz[2] / zn);
-
-        // Calculate Lab components
-        let l = T::from(116.0).unwrap() * y - T::from(16.0).unwrap();
-        let a = T::from(500.0).unwrap() * (x - y);
-        let b = T::from(200.0).unwrap() * (y - z);
-
-        [l, a, b]
-    }
-
-    /// Helper function for Lab conversion
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn lab_f(t: T) -> T {
-        let delta = T::from(6.0 / 29.0).unwrap();
-        let delta_cubed = delta * delta * delta;
-
-        if t > delta_cubed {
-            t.powf(T::from(1.0 / 3.0).unwrap())
-        } else {
-            t / (T::from(3.0).unwrap() * delta * delta) + T::from(4.0 / 29.0).unwrap()
-        }
-    }
-
-    /// Convert Lab to XYZ colour space
-    #[expect(
-        clippy::single_call_fn,
-        reason = "Packaging this code in a function makes it easier to maintain."
-    )]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn lab_to_xyz(lab: &[T; 3]) -> [T; 3] {
-        // Reference white (D65)
-        let xn = T::from(0.95047).unwrap();
-        let yn = T::from(1.0).unwrap();
-        let zn = T::from(1.08883).unwrap();
-
-        // Calculate intermediate values
-        let fy = (lab[0] + T::from(16.0).unwrap()) / T::from(116.0).unwrap();
-        let fx = fy + (lab[1] / T::from(500.0).unwrap());
-        let fz = fy - (lab[2] / T::from(200.0).unwrap());
-
-        // Convert to XYZ
-        let x = Self::lab_f_inv(fx) * xn;
-        let y = Self::lab_f_inv(fy) * yn;
-        let z = Self::lab_f_inv(fz) * zn;
-
-        [x, y, z]
-    }
-
-    /// Inverse function for Lab conversion
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn lab_f_inv(t: T) -> T {
-        let delta = T::from(6.0 / 29.0).unwrap();
-
-        if t > delta {
-            t * t * t
-        } else {
-            T::from(3.0).unwrap() * delta * delta * (t - T::from(4.0 / 29.0).unwrap())
-        }
-    }
-
-    /// Convert XYZ to RGB colour space
-    #[expect(
-        clippy::single_call_fn,
-        reason = "Packaging this code in a function makes it easier to maintain."
-    )]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn xyz_to_rgb(xyz: &[T; 3]) -> Self {
-        // Convert XYZ to linear RGB using sRGB standard inverse matrix
-        let red =
-            xyz[0] * T::from(3.2404542).unwrap() - xyz[1] * T::from(1.5371385).unwrap() - xyz[2] * T::from(0.4985314).unwrap();
-        let green =
-            -xyz[0] * T::from(0.9692660).unwrap() + xyz[1] * T::from(1.8760108).unwrap() + xyz[2] * T::from(0.0415560).unwrap();
-        let blue =
-            xyz[0] * T::from(0.0556434).unwrap() - xyz[1] * T::from(0.2040259).unwrap() + xyz[2] * T::from(1.0572252).unwrap();
-
-        // Convert from linear RGB to gamma-corrected RGB
-        let red_gamma = Self::linear_to_gamma(red);
-        let green_gamma = Self::linear_to_gamma(green);
-        let blue_gamma = Self::linear_to_gamma(blue);
-
-        // Clamp values to [0, 1] range
-        let red_clamped = red_gamma.max(T::zero()).min(T::one());
-        let green_clamped = green_gamma.max(T::zero()).min(T::one());
-        let blue_clamped = blue_gamma.max(T::zero()).min(T::one());
-
-        Self::new(red_clamped, green_clamped, blue_clamped)
-    }
-
-    /// Convert gamma-corrected RGB to linear RGB
-    #[expect(clippy::min_ident_chars, reason = "There is only a single variable `c`.")]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn gamma_to_linear(c: T) -> T {
-        if c <= T::from(0.04045).unwrap() {
-            c / T::from(12.92).unwrap()
-        } else {
-            ((c + T::from(0.055).unwrap()) / T::from(1.055).unwrap()).powf(T::from(2.4).unwrap())
-        }
-    }
-
-    /// Convert linear RGB to gamma-corrected RGB
-    #[expect(clippy::min_ident_chars, reason = "There is only a single variable `c`.")]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[inline]
-    fn linear_to_gamma(c: T) -> T {
-        if c <= T::from(0.0031308).unwrap() {
-            c * T::from(12.92).unwrap()
-        } else {
-            c.powf(T::from(1.0 / 2.4).unwrap()) * T::from(1.055).unwrap() - T::from(0.055).unwrap()
-        }
-    }
 }
 
 impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
@@ -338,7 +158,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
         [red, green, blue]
     }
 
-    /// Linear interpolate between two RGB colours using Lab colour space for perceptual uniformity.
+    /// Linear interpolate between two RGB colours.
     ///
     /// # Panics
     ///
@@ -350,27 +170,11 @@ impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
     #[inline]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
         assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
-
-        // Convert RGB to XYZ
-        let xyz1 = Self::rgb_to_xyz(lhs);
-        let xyz2 = Self::rgb_to_xyz(rhs);
-
-        // Convert XYZ to Lab
-        let lab1 = Self::xyz_to_lab(&xyz1);
-        let lab2 = Self::xyz_to_lab(&xyz2);
-
-        // Interpolate in Lab space
-        let lab_result = [
-            lab1[0] * (T::one() - t) + lab2[0] * t,
-            lab1[1] * (T::one() - t) + lab2[1] * t,
-            lab1[2] * (T::one() - t) + lab2[2] * t,
-        ];
-
-        // Convert back to XYZ
-        let xyz_result = Self::lab_to_xyz(&lab_result);
-
-        // Convert XYZ to RGB
-        Self::xyz_to_rgb(&xyz_result)
+        Self::new(
+            lhs.red() * (T::one() - t) + rhs.red() * t,
+            lhs.green() * (T::one() - t) + rhs.green() * t,
+            lhs.blue() * (T::one() - t) + rhs.blue() * t,
+        )
     }
 }
 
