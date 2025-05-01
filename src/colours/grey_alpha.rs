@@ -3,9 +3,12 @@
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     num::ParseIntError,
+    ops::AddAssign,
     str::FromStr,
 };
 use num_traits::{Float, ToPrimitive};
+
+use crate::Colour;
 
 /// Error parsing `GreyAlpha` from string.
 #[derive(Debug)]
@@ -26,7 +29,7 @@ pub enum ParseGreyAlphaError<E> {
 #[non_exhaustive]
 pub struct GreyAlpha<T: Float>(T, T);
 
-impl<T: Float + Display> GreyAlpha<T> {
+impl<T: Display + AddAssign + Float> GreyAlpha<T> {
     /// Create a new `GreyAlpha` instance.
     ///
     /// # Panics
@@ -50,81 +53,6 @@ impl<T: Float + Display> GreyAlpha<T> {
         grey = grey.max(T::zero()).min(T::one());
         alpha = alpha.max(T::zero()).min(T::one());
         Self(grey, alpha)
-    }
-
-    /// Linear interpolate between two greyalphas.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the interpolation factor is not in [0, 1].
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[inline]
-    pub fn lerp(lhs: Self, rhs: Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
-        Self::new(
-            lhs.grey() * (T::one() - t) + rhs.grey() * t,
-            lhs.alpha() * (T::one() - t) + rhs.alpha() * t,
-        )
-    }
-
-    /// Mix N by folding lerp (assumes weights sum to 1).
-    ///
-    /// # Panics
-    ///
-    /// Panics if the list of colours is empty.
-    /// Panics if the lengths of colours and weights do not match.
-    /// Panics if any weight is negative.
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[inline]
-    pub fn mix_fold(colours: &[Self], weights: &[T]) -> Self {
-        assert!(!colours.is_empty(), "Cannot mix an empty list of colours.");
-        assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");
-        assert!(weights.iter().all(|&w| w >= T::zero()), "Weights must be non-negative.");
-
-        let mut acc = colours[0];
-        let mut acc_w = weights[0];
-        for (&col, &w) in colours.iter().skip(1).zip(weights.iter().skip(1)) {
-            let t = w / (acc_w + w);
-            acc = Self::lerp(acc, col, t);
-            acc_w = acc_w + w;
-        }
-        acc
-    }
-
-    /// Create a new `GreyAlpha` value from a byte array.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
-    #[inline]
-    pub fn from_bytes(bytes: [u8; 2]) -> Self {
-        let max = T::from(255_u8).unwrap();
-        let grey = T::from(bytes[0]).unwrap() / max;
-        let alpha = T::from(bytes[1]).unwrap() / max;
-        Self::new(grey, alpha)
-    }
-
-    /// Convert to a byte array.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
-    #[inline]
-    pub fn to_bytes(self) -> [u8; 2] {
-        let max = T::from(255_u8).unwrap();
-        let grey = (self.0 * max).round().to_u8().unwrap();
-        let alpha = (self.1 * max).round().to_u8().unwrap();
-        [grey, alpha]
     }
 
     /// Get the grey component.
@@ -166,21 +94,63 @@ impl<T: Float + Display> GreyAlpha<T> {
         );
         self.1 = alpha;
     }
+}
 
-    /// Get the tolerance for comparing grey values.
+impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
+    #[inline]
+    fn num_components(&self) -> usize {
+        2
+    }
+
+    #[inline]
+    fn components(&self) -> [T; 2] {
+        [self.0, self.1]
+    }
+
+    #[inline]
+    fn set_components(&mut self, components: [T; 2]) {
+        self.set_grey(components[0]);
+        self.set_alpha(components[1]);
+    }
+
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    fn from_bytes(bytes: [u8; 2]) -> Self {
+        let max = T::from(255_u8).unwrap();
+        let grey = T::from(bytes[0]).unwrap() / max;
+        let alpha = T::from(bytes[1]).unwrap() / max;
+        Self::new(grey, alpha)
+    }
+
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    fn to_bytes(self) -> [u8; 2] {
+        let max = T::from(255_u8).unwrap();
+        let grey = (self.0 * max).round().to_u8().unwrap();
+        let alpha = (self.1 * max).round().to_u8().unwrap();
+        [grey, alpha]
+    }
+
+    /// Linear interpolate between two `GreyAlpha`s.
     ///
     /// # Panics
     ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
+    /// Panics if the interpolation factor is not in [0, 1].
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `t` for an interpolation factor is idiomatic."
+    )]
     #[inline]
-    pub fn tolerance() -> T {
-        T::one() / T::from(256_i32).unwrap()
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
+        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
+        Self::new(
+            lhs.grey() * (T::one() - t) + rhs.grey() * t,
+            lhs.alpha() * (T::one() - t) + rhs.alpha() * t,
+        )
     }
 }
 
-impl<T: Float + Display> PartialEq for GreyAlpha<T> {
+impl<T: Float + AddAssign + Display> PartialEq for GreyAlpha<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.0 - other.0).abs() <= Self::tolerance() && (self.1 - other.1).abs() <= Self::tolerance()
@@ -189,7 +159,7 @@ impl<T: Float + Display> PartialEq for GreyAlpha<T> {
 
 impl<T> FromStr for GreyAlpha<T>
 where
-    T: Display + Float + FromStr + ToPrimitive,
+    T: Display + AddAssign + Float + FromStr + ToPrimitive,
 {
     type Err = ParseGreyAlphaError<<T as FromStr>::Err>;
 
@@ -204,10 +174,11 @@ where
                 return Err(ParseGreyAlphaError::InvalidFormat);
             }
 
-            // parse hex 0–F for grey
-            let grey_value = u8::from_str_radix(&hex[0..1], 16).map_err(ParseGreyAlphaError::ParseHex)?;
-            // parse hex 0–F for alpha
-            let alpha_value = u8::from_str_radix(&hex[1..2], 16).map_err(ParseGreyAlphaError::ParseHex)?;
+            let mut chars = hex.chars();
+            let grey_digit = chars.next().unwrap();
+            let alpha_digit = chars.next().unwrap();
+            let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+            let alpha_value = u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
 
             // scale from 0–15 into 0.0–1.0
             let grey = T::from(grey_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(15).unwrap();

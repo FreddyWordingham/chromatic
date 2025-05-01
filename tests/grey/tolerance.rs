@@ -1,4 +1,4 @@
-use chromatic::Grey;
+use chromatic::{Colour, Grey};
 
 // Test the tolerance value for `Grey`.
 #[test]

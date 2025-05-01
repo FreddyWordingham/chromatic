@@ -1,4 +1,4 @@
-use chromatic::GreyAlpha;
+use chromatic::{Colour, GreyAlpha};
 
 #[test]
 fn test_grey_alpha_equality() {

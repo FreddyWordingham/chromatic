@@ -3,9 +3,12 @@
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
     num::ParseIntError,
+    ops::AddAssign,
     str::FromStr,
 };
 use num_traits::{Float, ToPrimitive};
+
+use crate::Colour;
 
 /// Error parsing `Grey` from string.
 #[derive(Debug)]
@@ -24,7 +27,7 @@ pub enum ParseGreyError<E> {
 #[non_exhaustive]
 pub struct Grey<T: Float>(T);
 
-impl<T: Float + Display> Grey<T> {
+impl<T: Display + AddAssign + Float> Grey<T> {
     /// Create a new `Grey` instance.
     ///
     /// # Panics
@@ -41,76 +44,6 @@ impl<T: Float + Display> Grey<T> {
         }
         grey = grey.max(T::zero()).min(T::one());
         Self(grey)
-    }
-
-    /// Linear interpolate between two greys.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the interpolation factor is not in [0, 1].
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[inline]
-    pub fn lerp(lhs: Self, rhs: Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
-        Self::new(lhs.grey() * (T::one() - t) + rhs.grey() * t)
-    }
-
-    /// Mix N by folding lerp (assumes weights sum to 1).
-    ///
-    /// # Panics
-    ///
-    /// Panics if the list of colours is empty.
-    /// Panics if the lengths of colours and weights do not match.
-    /// Panics if any weight is negative.
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[inline]
-    pub fn mix_fold(colours: &[Self], weights: &[T]) -> Self {
-        assert!(!colours.is_empty(), "Cannot mix an empty list of colours.");
-        assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");
-        assert!(weights.iter().all(|&w| w >= T::zero()), "Weights must be non-negative.");
-
-        let mut acc = colours[0];
-        let mut acc_w = weights[0];
-        for (&col, &w) in colours.iter().skip(1).zip(weights.iter().skip(1)) {
-            let t = w / (acc_w + w);
-            acc = Self::lerp(acc, col, t);
-            acc_w = acc_w + w;
-        }
-        acc
-    }
-
-    /// Create a new `Grey` value from a byte array.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
-    #[inline]
-    pub fn from_bytes(bytes: [u8; 1]) -> Self {
-        let max = T::from(255_u8).unwrap();
-        let value = T::from(bytes[0]).unwrap() / max;
-        Self::new(value)
-    }
-
-    /// Convert to a byte array.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
-    #[inline]
-    pub fn to_bytes(self) -> [u8; 1] {
-        let max = T::from(255_u8).unwrap();
-        let value = (self.0 * max).round().to_u8().unwrap();
-        [value]
     }
 
     /// Get the grey component.
@@ -132,21 +65,57 @@ impl<T: Float + Display> Grey<T> {
         );
         self.0 = grey;
     }
+}
 
-    /// Get the tolerance for comparing grey values.
+impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
+    #[inline]
+    fn num_components(&self) -> usize {
+        1
+    }
+
+    #[inline]
+    fn components(&self) -> [T; 1] {
+        [self.0]
+    }
+
+    #[inline]
+    fn set_components(&mut self, components: [T; 1]) {
+        self.set_grey(components[0]);
+    }
+
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    fn from_bytes(bytes: [u8; 1]) -> Self {
+        let max = T::from(255_u8).unwrap();
+        let value = T::from(bytes[0]).unwrap() / max;
+        Self::new(value)
+    }
+
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    fn to_bytes(self) -> [u8; 1] {
+        let max = T::from(255_u8).unwrap();
+        let value = (self.0 * max).round().to_u8().unwrap();
+        [value]
+    }
+
+    /// Linear interpolate between two greys.
     ///
     /// # Panics
     ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
+    /// Panics if the interpolation factor is not in [0, 1].
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "The variable `t` for an interpolation factor is idiomatic."
+    )]
     #[inline]
-    pub fn tolerance() -> T {
-        T::one() / T::from(256_i32).unwrap()
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
+        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
+        Self::new(lhs.grey() * (T::one() - t) + rhs.grey() * t)
     }
 }
 
-impl<T: Float + Display> PartialEq for Grey<T> {
+impl<T: Display + AddAssign + Float> PartialEq for Grey<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.0 - other.0).abs() <= Self::tolerance()
@@ -155,7 +124,7 @@ impl<T: Float + Display> PartialEq for Grey<T> {
 
 impl<T> FromStr for Grey<T>
 where
-    T: Display + Float + FromStr + ToPrimitive,
+    T: Display + AddAssign + Float + FromStr + ToPrimitive,
 {
     type Err = ParseGreyError<<T as FromStr>::Err>;
 

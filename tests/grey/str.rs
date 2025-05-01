@@ -1,4 +1,4 @@
-use chromatic::Grey;
+use chromatic::{Colour, Grey};
 use core::str::FromStr;
 
 // Tests for Display implementation.

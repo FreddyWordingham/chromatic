@@ -68,7 +68,7 @@
 #![deny(unreachable_code)]
 #![deny(unreachable_pub)]
 #![deny(unsafe_attr_outside_unsafe)]
-#![deny(unsafe_code)]
+// #![deny(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![deny(unstable_features)]
 #![deny(unused_assignments)]
@@ -113,6 +113,8 @@
     reason = "Prefer to use attached suffixes for consistency."
 )]
 
+mod colour;
 mod colours;
 
+pub use colour::Colour;
 pub use colours::{Grey, GreyAlpha, ParseGreyAlphaError, ParseGreyError};

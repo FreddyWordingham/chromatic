@@ -1,4 +1,4 @@
-use chromatic::GreyAlpha;
+use chromatic::{Colour, GreyAlpha};
 
 // Test basic functionality of from_bytes method.
 #[test]
