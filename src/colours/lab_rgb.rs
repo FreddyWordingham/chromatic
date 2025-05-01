@@ -476,7 +476,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 3> for LabRgb<T> {
     }
 }
 
-impl<T: Float + AddAssign + Display> PartialEq for LabRgb<T> {
+impl<T: Display + AddAssign + Float> PartialEq for LabRgb<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // Compare Lab components directly

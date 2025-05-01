@@ -225,7 +225,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
     }
 }
 
-impl<T: Float + AddAssign + Display> PartialEq for Rgb<T> {
+impl<T: Display + AddAssign + Float> PartialEq for Rgb<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.red - other.red).abs() <= Self::tolerance()

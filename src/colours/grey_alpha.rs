@@ -185,7 +185,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     }
 }
 
-impl<T: Float + AddAssign + Display> PartialEq for GreyAlpha<T> {
+impl<T: Display + AddAssign + Float> PartialEq for GreyAlpha<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         (self.grey - other.grey).abs() <= Self::tolerance() && (self.alpha - other.alpha).abs() <= Self::tolerance()
