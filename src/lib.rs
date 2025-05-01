@@ -121,4 +121,4 @@ mod colours;
 
 pub use colour::Colour;
 pub use colour_map::ColourMap;
-pub use colours::{Grey, GreyAlpha, ParseGreyAlphaError, ParseGreyError, ParseRgbError, Rgb};
+pub use colours::{Grey, GreyAlpha, ParseGreyAlphaError, ParseGreyError, ParseRgbError, ParseRgbaError, Rgb, Rgba};
