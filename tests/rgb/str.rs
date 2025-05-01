@@ -194,8 +194,8 @@ fn test_rgb_from_str_edge_cases() {
     assert_eq!(rgb.green(), 0.0);
     assert_eq!(rgb.blue(), 0.0);
 
-    // Test common HTML color names via hex codes
-    let colors = [
+    // Test common HTML colour names via hex codes
+    let colours = [
         ("#FF0000", "red", (1.0, 0.0, 0.0)),
         ("#00FF00", "green", (0.0, 1.0, 0.0)),
         ("#0000FF", "blue", (0.0, 0.0, 1.0)),
@@ -208,21 +208,21 @@ fn test_rgb_from_str_edge_cases() {
         ("#808000", "olive", (0.5, 0.5, 0.0)),
     ];
 
-    for (hex, name, (r, g, b)) in colors {
+    for (hex, name, (r, g, b)) in colours {
         let rgb = Rgb::<f32>::from_str(hex).unwrap();
         assert!(
             (rgb.red() - r).abs() < Rgb::<f32>::tolerance(),
-            "Failed for color {}: red",
+            "Failed for colour {}: red",
             name
         );
         assert!(
             (rgb.green() - g).abs() < Rgb::<f32>::tolerance(),
-            "Failed for color {}: green",
+            "Failed for colour {}: green",
             name
         );
         assert!(
             (rgb.blue() - b).abs() < Rgb::<f32>::tolerance(),
-            "Failed for color {}: blue",
+            "Failed for colour {}: blue",
             name
         );
     }

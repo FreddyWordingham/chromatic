@@ -159,7 +159,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         Self::new(components[0], components[1], components[2], T::one())
     }
 
-    /// Linear interpolate between two RGBA colours using Lab color space for perceptual uniformity.
+    /// Linear interpolate between two RGBA colours using Lab colour space for perceptual uniformity.
     ///
     /// # Panics
     ///
@@ -179,7 +179,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         )
     }
 
-    /// Convert RGB to XYZ color space
+    /// Convert RGB to XYZ colour space
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn rgb_to_xyz(rgb: &Self) -> [T; 3] {
@@ -196,7 +196,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         [x, y, z]
     }
 
-    /// Convert XYZ to Lab color space
+    /// Convert XYZ to Lab colour space
     #[expect(
         clippy::many_single_char_names,
         reason = "The variables `xyz` and `lab` are idiomatic for colour spaces."
@@ -244,7 +244,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         }
     }
 
-    /// Convert Lab to XYZ color space
+    /// Convert Lab to XYZ colour space
     #[expect(
         clippy::single_call_fn,
         reason = "Packaging this code in a function makes it easier to maintain."
@@ -287,7 +287,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         }
     }
 
-    /// Convert XYZ to RGB color space
+    /// Convert XYZ to RGB colour space
     #[expect(
         clippy::single_call_fn,
         reason = "Packaging this code in a function makes it easier to maintain."
@@ -382,7 +382,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
         [red, green, blue, alpha]
     }
 
-    /// Linear interpolate between two RGBA colors using Lab color space for perceptual uniformity.
+    /// Linear interpolate between two RGBA colours using Lab colour space for perceptual uniformity.
     ///
     /// # Panics
     ///

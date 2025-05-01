@@ -53,11 +53,11 @@ fn test_grey_mix_multiple_values() {
 fn test_grey_mix_with_zero_weights() {
     let colours = [Grey::<f32>::new(0.2), Grey::<f32>::new(0.4), Grey::<f32>::new(0.8)];
 
-    // Only the first color has non-zero weight
+    // Only the first colour has non-zero weight
     let weights = [1.0, 0.0, 0.0];
     let result = Grey::<f32>::mix(&colours, &weights);
 
-    // Result should be equal to the first color
+    // Result should be equal to the first colour
     assert_eq!(result, colours[0]);
 }
 
@@ -100,7 +100,7 @@ fn test_grey_mix_single_colour() {
 
     let result = Grey::<f64>::mix(&colours, &weights);
 
-    // With a single color, the result should equal that color
+    // With a single colour, the result should equal that colour
     assert_eq!(result, colours[0]);
 }
 

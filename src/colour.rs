@@ -66,16 +66,16 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
         assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");
         assert!(weights.iter().all(|&w| w >= T::zero()), "Weights must be non-negative.");
 
-        // Handle the single color case
+        // Handle the single colour case
         if colours.len() == 1 {
             return colours[0].clone();
         }
 
-        // Create the accumulated result, starting with the first color
+        // Create the accumulated result, starting with the first colour
         let mut result = colours[0].clone();
         let mut acc_weight = weights[0];
 
-        // Progressively mix in each additional color
+        // Progressively mix in each additional colour
         for i in 1..colours.len() {
             // Calculate the interpolation factor
             let t = weights[i] / (acc_weight + weights[i]);

@@ -62,11 +62,11 @@ fn test_grey_alpha_mix_with_zero_weights() {
         GreyAlpha::<f32>::new(0.8, 0.7),
     ];
 
-    // Only the first color has non-zero weight
+    // Only the first colour has non-zero weight
     let weights = [1.0, 0.0, 0.0];
     let result = GreyAlpha::<f32>::mix(&colours, &weights);
 
-    // Result should be equal to the first color
+    // Result should be equal to the first colour
     assert_eq!(result, colours[0]);
 }
 
@@ -109,7 +109,7 @@ fn test_grey_alpha_mix_single_colour() {
 
     let result = GreyAlpha::<f64>::mix(&colours, &weights);
 
-    // With a single color, the result should equal that color
+    // With a single colour, the result should equal that colour
     assert_eq!(result, colours[0]);
 }
 

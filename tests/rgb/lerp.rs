@@ -113,7 +113,7 @@ fn test_rgb_lerp_t_above_max() {
 
 #[test]
 fn test_rgb_lerp_different_components() {
-    // Test lerping between colors with large differences in individual components
+    // Test lerping between colours with large differences in individual components
     let red = Rgb::<f32>::new(1.0, 0.0, 0.0);
     let blue = Rgb::<f32>::new(0.0, 0.0, 1.0);
 
@@ -123,7 +123,7 @@ fn test_rgb_lerp_different_components() {
     assert_eq!(purple.green(), 0.0);
     assert_eq!(purple.blue(), 0.5);
 
-    // Test with more complex colors
+    // Test with more complex colours
     let orange = Rgb::<f64>::new(1.0, 0.5, 0.0);
     let teal = Rgb::<f64>::new(0.0, 0.5, 0.5);
 

@@ -67,11 +67,11 @@ fn test_rgb_mix_with_zero_weights() {
         Rgb::<f32>::new(0.8, 0.7, 0.6),
     ];
 
-    // Only the first color has non-zero weight
+    // Only the first colour has non-zero weight
     let weights = [1.0, 0.0, 0.0];
     let result = Rgb::<f32>::mix(&colours, &weights);
 
-    // Result should be equal to the first color
+    // Result should be equal to the first colour
     assert_eq!(result, colours[0]);
 }
 
@@ -114,7 +114,7 @@ fn test_rgb_mix_single_colour() {
 
     let result = Rgb::<f64>::mix(&colours, &weights);
 
-    // With a single color, the result should equal that color
+    // With a single colour, the result should equal that colour
     assert_eq!(result, colours[0]);
 }
 
@@ -135,8 +135,8 @@ fn test_rgb_mix_very_small_weights() {
 }
 
 #[test]
-fn test_rgb_mix_primary_colors() {
-    // Test mixing primary colors
+fn test_rgb_mix_primary_colours() {
+    // Test mixing primary colours
     let red = Rgb::<f32>::new(1.0, 0.0, 0.0);
     let green = Rgb::<f32>::new(0.0, 1.0, 0.0);
     let blue = Rgb::<f32>::new(0.0, 0.0, 1.0);
@@ -151,7 +151,7 @@ fn test_rgb_mix_primary_colors() {
     assert!((result.green() - 1.0 / 3.0).abs() < Rgb::<f32>::tolerance());
     assert!((result.blue() - 1.0 / 3.0).abs() < Rgb::<f32>::tolerance());
 
-    // Test mixing to create secondary colors
+    // Test mixing to create secondary colours
     let colours = [red, green];
     let weights = [1.0, 1.0];
 

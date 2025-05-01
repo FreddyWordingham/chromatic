@@ -15,7 +15,7 @@ fn test_rgb_from_bytes() {
     assert_eq!(rgb.green(), 1.0);
     assert_eq!(rgb.blue(), 1.0);
 
-    // Test primary colors
+    // Test primary colours
     let rgb = Rgb::<f32>::from_bytes([255, 0, 0]);
     assert_eq!(rgb.red(), 1.0);
     assert_eq!(rgb.green(), 0.0);
@@ -60,7 +60,7 @@ fn test_rgb_to_bytes() {
     let rgb = Rgb::<f32>::new(1.0, 1.0, 1.0);
     assert_eq!(rgb.to_bytes(), [255, 255, 255]);
 
-    // Test primary colors
+    // Test primary colours
     let rgb = Rgb::<f32>::new(1.0, 0.0, 0.0);
     assert_eq!(rgb.to_bytes(), [255, 0, 0]);
 
@@ -164,11 +164,11 @@ fn test_rgb_bytes_different_float_types() {
     assert_eq!(bytes_f32, bytes_f64);
 }
 
-// Test conversion of common named colors
+// Test conversion of common named colours
 #[test]
-fn test_rgb_bytes_named_colors() {
-    // Test common color names and their RGB values
-    let colors = [
+fn test_rgb_bytes_named_colours() {
+    // Test common colour names and their RGB values
+    let colours = [
         // (R, G, B, name)
         ([255, 0, 0], "red"),
         ([0, 255, 0], "green"),
@@ -187,11 +187,11 @@ fn test_rgb_bytes_named_colors() {
         ([128, 0, 128], "purple"),
     ];
 
-    for (bytes, name) in colors {
+    for (bytes, name) in colours {
         let rgb = Rgb::<f32>::from_bytes(bytes);
         let round_trip = rgb.to_bytes();
 
-        assert_eq!(round_trip, bytes, "Failed for color: {}", name);
+        assert_eq!(round_trip, bytes, "Failed for colour: {}", name);
 
         // Also verify the expected float values
         let expected_red = bytes[0] as f32 / 255.0;
@@ -200,17 +200,17 @@ fn test_rgb_bytes_named_colors() {
 
         assert!(
             (rgb.red() - expected_red).abs() < Rgb::<f32>::tolerance(),
-            "Failed red component for color: {}",
+            "Failed red component for colour: {}",
             name
         );
         assert!(
             (rgb.green() - expected_green).abs() < Rgb::<f32>::tolerance(),
-            "Failed green component for color: {}",
+            "Failed green component for colour: {}",
             name
         );
         assert!(
             (rgb.blue() - expected_blue).abs() < Rgb::<f32>::tolerance(),
-            "Failed blue component for color: {}",
+            "Failed blue component for colour: {}",
             name
         );
     }
