@@ -7,7 +7,7 @@ use core::{
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::{Colour, ParseRgbError};
+use crate::{Colour, Grey, GreyAlpha, LabRgba, ParseRgbError, Rgb, Rgba};
 
 /// RGB colour representation using Lab colour space internally.
 #[derive(Debug, Clone, Copy)]
@@ -219,6 +219,32 @@ impl<T: Display + AddAssign + Float> LabRgb<T> {
         }
     }
 
+    /// Create a new `LabRgb` instance from Lab components.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any component is not in [0, 1].
+    #[inline]
+    pub fn from_lab(lightness: T, a_axis: T, b_axis: T) -> Self {
+        assert!(
+            lightness >= T::zero() && lightness <= T::one(),
+            "Lightness component must be between 0 and 1."
+        );
+        assert!(
+            a_axis >= T::zero() && a_axis <= T::one(),
+            "A-axis component must be between 0 and 1."
+        );
+        assert!(
+            b_axis >= T::zero() && b_axis <= T::one(),
+            "B-axis component must be between 0 and 1."
+        );
+        Self {
+            lightness,
+            a_axis,
+            b_axis,
+        }
+    }
+
     /// Convert RGB array to XYZ colour space
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
@@ -333,6 +359,50 @@ impl<T: Display + AddAssign + Float> LabRgb<T> {
         self.lightness = lab[0];
         self.a_axis = lab[1];
         self.b_axis = lab[2];
+    }
+
+    /// Convert to `Grey`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn to_grey(&self) -> Grey<T> {
+        let [red, green, blue] = self.rgb_components();
+        Grey::new((red + green + blue) / T::from(3).unwrap())
+    }
+
+    /// Convert to `GreyAlpha`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn to_grey_alpha(&self, alpha: T) -> GreyAlpha<T> {
+        let [red, green, blue] = self.rgb_components();
+        GreyAlpha::new((red + green + blue) / T::from(3).unwrap(), alpha)
+    }
+
+    /// Convert to `Rgb`.
+    #[inline]
+    pub fn to_rgb(&self) -> Rgb<T> {
+        let [red, green, blue] = self.rgb_components();
+        Rgb::new(red, green, blue)
+    }
+
+    /// Convert to `Rgba`.
+    #[inline]
+    pub fn to_rgba(&self, alpha: T) -> Rgba<T> {
+        let [red, green, blue] = self.rgb_components();
+        Rgba::new(red, green, blue, alpha)
+    }
+
+    /// Convert to `LabRgba`.
+    #[inline]
+    pub fn to_lab_rgba(&self, alpha: T) -> LabRgba<T> {
+        LabRgba::from_lab(self.lightness, self.a_axis, self.b_axis, alpha)
     }
 }
 

@@ -7,7 +7,7 @@ use core::{
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::{Colour, ParseRgbaError};
+use crate::{Colour, Grey, GreyAlpha, LabRgb, ParseRgbaError, Rgb, Rgba};
 
 /// RGB colour representation with transparency using Lab colour space internally.
 #[derive(Debug, Clone, Copy)]
@@ -26,11 +26,11 @@ pub struct LabRgba<T: Float> {
 impl<T: Float> LabRgba<T> {
     /// Convert Lab components and alpha to RGBA components.
     #[inline]
-    fn rgba_components(&self) -> [T; 4] {
+    fn rgb_components(&self) -> [T; 3] {
         let lab = [self.lightness, self.a_axis, self.b_axis];
         let xyz = Self::lab_to_xyz(&lab);
         let rgb = Self::xyz_to_rgb_components(&xyz);
-        [rgb[0], rgb[1], rgb[2], self.alpha]
+        [rgb[0], rgb[1], rgb[2]]
     }
 
     /// Convert XYZ to Lab colour space.
@@ -230,6 +230,37 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
         }
     }
 
+    /// Create a new `LabRgba` instance from Lab components.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any component is not in [0, 1].
+    #[inline]
+    pub fn from_lab(lightness: T, a_axis: T, b_axis: T, alpha: T) -> Self {
+        assert!(
+            lightness >= T::zero() && lightness <= T::one(),
+            "Lightness component must be between 0 and 1."
+        );
+        assert!(
+            a_axis >= T::zero() && a_axis <= T::one(),
+            "A-axis component must be between 0 and 1."
+        );
+        assert!(
+            b_axis >= T::zero() && b_axis <= T::one(),
+            "B-axis component must be between 0 and 1."
+        );
+        assert!(
+            alpha >= T::zero() && alpha <= T::one(),
+            "Alpha component must be between 0 and 1."
+        );
+        Self {
+            lightness,
+            a_axis,
+            b_axis,
+            alpha,
+        }
+    }
+
     /// Convert RGB array to XYZ colour space.
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
@@ -250,27 +281,27 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
     /// Get the red component.
     #[inline]
     pub fn red(&self) -> T {
-        let rgba = self.rgba_components();
+        let rgba = self.rgb_components();
         rgba[0]
     }
 
     /// Get the green component.
     #[inline]
     pub fn green(&self) -> T {
-        let rgba = self.rgba_components();
+        let rgba = self.rgb_components();
         rgba[1]
     }
 
     /// Get the blue component.
     #[inline]
     pub fn blue(&self) -> T {
-        let rgba = self.rgba_components();
+        let rgba = self.rgb_components();
         rgba[2]
     }
 
     /// Get the alpha component.
     #[inline]
-    pub fn alpha(&self) -> T {
+    pub const fn alpha(&self) -> T {
         self.alpha
     }
 
@@ -284,10 +315,10 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
         assert!(red >= T::zero() && red <= T::one(), "Red component must be between 0 and 1.");
 
         // Get current RGB values
-        let rgba = self.rgba_components();
+        let rgb = self.rgb_components();
 
         // Update with new red value
-        let new_rgb = [red, rgba[1], rgba[2]];
+        let new_rgb = [red, rgb[1], rgb[2]];
 
         // Convert back to Lab
         let xyz = Self::rgb_to_xyz_components(&new_rgb);
@@ -311,10 +342,10 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
         );
 
         // Get current RGB values
-        let rgba = self.rgba_components();
+        let rgb = self.rgb_components();
 
         // Update with new green value
-        let new_rgb = [rgba[0], green, rgba[2]];
+        let new_rgb = [rgb[0], green, rgb[2]];
 
         // Convert back to Lab
         let xyz = Self::rgb_to_xyz_components(&new_rgb);
@@ -338,10 +369,10 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
         );
 
         // Get current RGB values
-        let rgba = self.rgba_components();
+        let rgb = self.rgb_components();
 
         // Update with new blue value
-        let new_rgb = [rgba[0], rgba[1], blue];
+        let new_rgb = [rgb[0], rgb[1], blue];
 
         // Convert back to Lab
         let xyz = Self::rgb_to_xyz_components(&new_rgb);
@@ -366,32 +397,48 @@ impl<T: Display + AddAssign + Float> LabRgba<T> {
         self.alpha = alpha;
     }
 
-    /// Convert to RGB by discarding the alpha channel.
+    /// Convert to `Grey`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
-    pub fn to_rgb(&self) -> crate::Rgb<T> {
-        let rgba = self.rgba_components();
-        crate::Rgb::new(rgba[0], rgba[1], rgba[2])
+    pub fn to_grey(&self) -> Grey<T> {
+        let [red, green, blue] = self.rgb_components();
+        Grey::new((red + green + blue) / T::from(3).unwrap())
     }
 
-    /// Convert to LabRgb by discarding the alpha channel.
+    /// Convert to `GreyAlpha`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
-    pub fn to_lab_rgb(&self) -> crate::LabRgb<T> {
-        let rgba = self.rgba_components();
-        crate::LabRgb::new(rgba[0], rgba[1], rgba[2])
+    pub fn to_grey_alpha(&self) -> GreyAlpha<T> {
+        let [red, green, blue] = self.rgb_components();
+        GreyAlpha::new((red + green + blue) / T::from(3).unwrap(), self.alpha)
     }
 
-    /// Create from RGB with full opacity.
+    /// Convert to `Rgb`.
     #[inline]
-    pub fn from_rgb(rgb: &crate::Rgb<T>) -> Self {
-        let components = rgb.components();
-        Self::new(components[0], components[1], components[2], T::one())
+    pub fn to_rgb(&self) -> Rgb<T> {
+        let [red, green, blue] = self.rgb_components();
+        Rgb::new(red, green, blue)
     }
 
-    /// Create from LabRgb with full opacity.
+    /// Convert to `Rgba`.
     #[inline]
-    pub fn from_lab_rgb(lab_rgb: &crate::LabRgb<T>) -> Self {
-        let components = lab_rgb.components();
-        Self::new(components[0], components[1], components[2], T::one())
+    pub fn to_rgba(&self) -> Rgba<T> {
+        let [red, green, blue] = self.rgb_components();
+        Rgba::new(red, green, blue, self.alpha)
+    }
+
+    /// Convert to `LabRgb`.
+    #[inline]
+    pub fn to_lab_rgb(&self) -> LabRgb<T> {
+        LabRgb::from_lab(self.lightness, self.a_axis, self.b_axis)
     }
 }
 
@@ -403,8 +450,8 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for LabRgba<T> {
 
     #[inline]
     fn components(&self) -> [T; 4] {
-        // Convert Lab back to RGB for the external interface
-        self.rgba_components()
+        let [red, green, blue] = self.rgb_components();
+        [red, green, blue, self.alpha]
     }
 
     #[inline]
@@ -433,12 +480,12 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for LabRgba<T> {
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn to_bytes(self) -> [u8; 4] {
-        let rgba = self.rgba_components();
+        let rgb = self.rgb_components();
         let max = T::from(255_u8).unwrap();
-        let red = (rgba[0] * max).round().to_u8().unwrap();
-        let green = (rgba[1] * max).round().to_u8().unwrap();
-        let blue = (rgba[2] * max).round().to_u8().unwrap();
-        let alpha = (rgba[3] * max).round().to_u8().unwrap();
+        let red = (rgb[0] * max).round().to_u8().unwrap();
+        let green = (rgb[1] * max).round().to_u8().unwrap();
+        let blue = (rgb[2] * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         [red, green, blue, alpha]
     }
 
@@ -568,12 +615,12 @@ where
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let rgba = self.rgba_components();
+        let rgb = self.rgb_components();
         let max = T::from(255_u8).unwrap();
-        let red = (rgba[0] * max).round().to_u8().unwrap();
-        let green = (rgba[1] * max).round().to_u8().unwrap();
-        let blue = (rgba[2] * max).round().to_u8().unwrap();
-        let alpha = (rgba[3] * max).round().to_u8().unwrap();
+        let red = (rgb[0] * max).round().to_u8().unwrap();
+        let green = (rgb[1] * max).round().to_u8().unwrap();
+        let blue = (rgb[2] * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         write!(f, "#{red:02X}{green:02X}{blue:02X}{alpha:02X}")
     }
 }

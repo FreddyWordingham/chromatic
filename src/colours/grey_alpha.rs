@@ -8,7 +8,7 @@ use core::{
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::Colour;
+use crate::{Colour, Grey, LabRgb, LabRgba, Rgb, Rgba};
 
 /// Error parsing `GreyAlpha` from string.
 #[derive(Debug)]
@@ -98,6 +98,41 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
             "Alpha component must be between 0 and 1."
         );
         self.alpha = alpha;
+    }
+
+    /// Convert to `Grey`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn to_grey(&self) -> Grey<T> {
+        Grey::new(self.grey)
+    }
+
+    /// Convert to `Rgb`.
+    #[inline]
+    pub fn to_rgb(&self) -> Rgb<T> {
+        Rgb::new(self.grey, self.grey, self.grey)
+    }
+
+    /// Convert to `Rgba`.
+    #[inline]
+    pub fn to_rgba(&self) -> Rgba<T> {
+        Rgba::new(self.grey, self.grey, self.grey, self.alpha)
+    }
+
+    /// Convert to `LabRgb`.
+    #[inline]
+    pub fn to_lab_rgb(&self) -> LabRgb<T> {
+        LabRgb::new(self.grey, self.grey, self.grey)
+    }
+
+    /// Convert to `LabRgba`.
+    #[inline]
+    pub fn to_lab_rgba(&self) -> LabRgba<T> {
+        LabRgba::new(self.grey, self.grey, self.grey, self.alpha)
     }
 }
 
