@@ -4,4 +4,4 @@
 
 mod grey;
 
-pub use grey::Grey;
+pub use grey::{Grey, ParseGreyError};

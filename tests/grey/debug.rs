@@ -1,9 +1,9 @@
 use chromatic::Grey;
 use core::fmt::Debug;
 
+// Verify Grey implements Debug trait.
 #[test]
 fn test_grey_debug_trait() {
-    // Verify Grey implements Debug trait
     fn requires_debug<T: Debug>(_val: &T) {}
 
     let grey = Grey::<f32>::new(0.5);

@@ -115,4 +115,4 @@
 
 mod colours;
 
-pub use colours::Grey;
+pub use colours::{Grey, ParseGreyError};

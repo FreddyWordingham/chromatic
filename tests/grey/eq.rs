@@ -19,10 +19,10 @@ fn test_grey_equality() {
     assert_ne!(grey1, out_of_range);
 }
 
+// Test edge cases around the tolerance boundary.
 #[test]
 fn test_grey_difference_boundary() {
-    // Test edge cases around the tolerance boundary
-    let tolerance = 1.0 / 256.0;
+    let tolerance = Grey::<f64>::tolerance();
 
     let base = Grey::<f64>::new(0.5);
     let just_within = Grey::<f64>::new(0.5 + tolerance * 0.99);
@@ -32,9 +32,9 @@ fn test_grey_difference_boundary() {
     assert_ne!(base, just_outside);
 }
 
+// Test equality at the boundaries.
 #[test]
 fn test_grey_boundary_values() {
-    // Test equality at the boundaries
     let zero1 = Grey::<f32>::new(0.0);
     let zero2 = Grey::<f32>::new(0.0);
     let almost_zero = Grey::<f32>::new(1.0 / 512.0);
@@ -50,10 +50,10 @@ fn test_grey_boundary_values() {
     assert_eq!(one1, almost_one);
 }
 
+// Test transitivity of equality.
 #[test]
 fn test_grey_transitivity() {
-    // Test transitivity of equality
-    let tolerance = 1.0 / 256.0;
+    let tolerance = Grey::<f64>::tolerance();
 
     let g1 = Grey::<f64>::new(0.5);
     let g2 = Grey::<f64>::new(0.5 + tolerance * 0.5);
