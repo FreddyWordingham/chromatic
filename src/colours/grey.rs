@@ -72,11 +72,6 @@ impl<T: Display + AddAssign + Float> Grey<T> {
     }
 
     /// Convert to `GreyAlpha`.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     pub fn to_grey_alpha(&self, alpha: T) -> GreyAlpha<T> {
         GreyAlpha::new(self.grey, alpha)
