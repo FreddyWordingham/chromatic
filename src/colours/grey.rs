@@ -39,15 +39,8 @@ impl<T: Display + AddAssign + Float> Grey<T> {
     ///
     /// Panics if the component is not in [0, 1].
     #[inline]
-    pub fn new(mut grey: T) -> Self {
-        let tolerance = Self::tolerance();
-        if grey < T::zero() - tolerance || grey > T::one() + tolerance {
-            assert!(
-                !(grey < T::zero() - tolerance || grey > T::one() + tolerance),
-                "Grey component {grey} out of [0, 1]\u{b1}{tolerance}."
-            );
-        }
-        grey = grey.clamp(T::zero(), T::one());
+    pub fn new(grey: T) -> Self {
+        assert!(!(grey < T::zero() || grey > T::one()), "Grey component {grey} out of [0, 1].");
         Self { grey }
     }
 

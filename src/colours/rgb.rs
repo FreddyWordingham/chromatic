@@ -43,29 +43,13 @@ impl<T: Display + AddAssign + Float> Rgb<T> {
     ///
     /// Panics if any component is not in [0, 1].
     #[inline]
-    pub fn new(mut red: T, mut green: T, mut blue: T) -> Self {
-        let tolerance = Self::tolerance();
-        if red < T::zero() - tolerance || red > T::one() + tolerance {
-            assert!(
-                !(red < T::zero() - tolerance || red > T::one() + tolerance),
-                "Red component {red} out of [0, 1]\u{b1}{tolerance}."
-            );
-        }
-        if green < T::zero() - tolerance || green > T::one() + tolerance {
-            assert!(
-                !(green < T::zero() - tolerance || green > T::one() + tolerance),
-                "Green component {green} out of [0, 1]\u{b1}{tolerance}."
-            );
-        }
-        if blue < T::zero() - tolerance || blue > T::one() + tolerance {
-            assert!(
-                !(blue < T::zero() - tolerance || blue > T::one() + tolerance),
-                "Blue component {blue} out of [0, 1]\u{b1}{tolerance}."
-            );
-        }
-        red = red.clamp(T::zero(), T::one());
-        green = green.clamp(T::zero(), T::one());
-        blue = blue.clamp(T::zero(), T::one());
+    pub fn new(red: T, green: T, blue: T) -> Self {
+        assert!(!(red < T::zero() || red > T::one()), "Red component {red} out of [0, 1].");
+        assert!(
+            !(green < T::zero() || green > T::one()),
+            "Green component {green} out of [0, 1]."
+        );
+        assert!(!(blue < T::zero() || blue > T::one()), "Blue component {blue} out of [0, 1].");
         Self { red, green, blue }
     }
 
