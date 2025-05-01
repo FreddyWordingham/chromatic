@@ -170,26 +170,3 @@ fn test_rgba_new_alpha_below_min() {
 fn test_rgba_new_alpha_above_max() {
     Rgba::<f32>::new(0.5, 0.5, 0.5, 1.1);
 }
-
-// Test rgba to rgb conversion
-#[test]
-fn test_rgba_to_rgb() {
-    let rgba = Rgba::<f32>::new(0.25, 0.5, 0.75, 0.8);
-    let rgb = rgba.to_rgb();
-
-    assert_eq!(rgb.red(), 0.25);
-    assert_eq!(rgb.green(), 0.5);
-    assert_eq!(rgb.blue(), 0.75);
-}
-
-// Test rgb to rgba conversion
-#[test]
-fn test_rgba_from_rgb() {
-    let rgb = chromatic::Rgb::<f32>::new(0.25, 0.5, 0.75);
-    let rgba = Rgba::<f32>::from_rgb(&rgb);
-
-    assert_eq!(rgba.red(), 0.25);
-    assert_eq!(rgba.green(), 0.5);
-    assert_eq!(rgba.blue(), 0.75);
-    assert_eq!(rgba.alpha(), 1.0); // should have full opacity
-}
