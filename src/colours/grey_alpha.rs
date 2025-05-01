@@ -2,27 +2,12 @@
 
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
     ops::AddAssign,
     str::FromStr,
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::{Colour, Grey, LabRgb, LabRgba, Rgb, Rgba};
-
-/// Error parsing `GreyAlpha` from string.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum ParseGreyAlphaError<E> {
-    /// Error parsing float.
-    ParseFloat(E),
-    /// Error parsing hex string.
-    ParseHex(ParseIntError),
-    /// Value out of range.
-    OutOfRange,
-    /// Invalid format.
-    InvalidFormat,
-}
+use crate::{Colour, Grey, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};
 
 /// Monochrome colour with transparency.
 #[derive(Debug, Clone, Copy)]
@@ -186,7 +171,7 @@ impl<T> FromStr for GreyAlpha<T>
 where
     T: Display + AddAssign + Float + FromStr + ToPrimitive,
 {
-    type Err = ParseGreyAlphaError<<T as FromStr>::Err>;
+    type Err = ParseColourError<<T as FromStr>::Err>;
 
     #[expect(clippy::min_ident_chars, reason = "The variable `s` for a string is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
@@ -201,13 +186,12 @@ where
                     let grey_digit = chars.next().unwrap();
                     let alpha_digit = chars.next().unwrap();
 
-                    let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
-                    let alpha_value =
-                        u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+                    let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                    let alpha_value = u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
 
                     // Expand short form (e.g., #FA becomes #FFAA)
-                    let grey = T::from(grey_value * 17).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
-                    let alpha = T::from(alpha_value * 17).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+                    let grey = T::from(grey_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let alpha = T::from(alpha_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
                     Ok(Self::new(grey, alpha))
                 }
@@ -219,25 +203,25 @@ where
                     let a1 = chars.next().unwrap().to_string();
                     let a2 = chars.next().unwrap().to_string();
 
-                    let grey_value = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseGreyAlphaError::ParseHex)?;
-                    let alpha_value = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseGreyAlphaError::ParseHex)?;
+                    let grey_value = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
+                    let alpha_value = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseColourError::ParseHex)?;
 
-                    let grey = T::from(grey_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
-                    let alpha = T::from(alpha_value).ok_or(ParseGreyAlphaError::OutOfRange)? / T::from(255).unwrap();
+                    let grey = T::from(grey_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let alpha = T::from(alpha_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
                     Ok(Self::new(grey, alpha))
                 }
-                _ => Err(ParseGreyAlphaError::InvalidFormat),
+                _ => Err(ParseColourError::InvalidFormat),
             }
         } else {
             // Look for comma-separated float values
             let parts: Vec<&str> = s.split(',').collect();
             if parts.len() != 2 {
-                return Err(ParseGreyAlphaError::InvalidFormat);
+                return Err(ParseColourError::InvalidFormat);
             }
 
-            let grey = parts[0].trim().parse::<T>().map_err(ParseGreyAlphaError::ParseFloat)?;
-            let alpha = parts[1].trim().parse::<T>().map_err(ParseGreyAlphaError::ParseFloat)?;
+            let grey = parts[0].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
+            let alpha = parts[1].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
 
             Ok(Self::new(grey, alpha))
         }

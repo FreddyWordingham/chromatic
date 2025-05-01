@@ -107,14 +107,14 @@ fn test_parse_grey_error_types() {
     // Test ParseFloat error
     let result = Grey::<f32>::from_str("not_a_number");
     match result {
-        Err(chromatic::ParseGreyError::ParseFloat(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseFloat(_)) => { /* Expected */ }
         _ => panic!("Expected ParseFloat error"),
     }
 
     // Test ParseHex error
     let result = Grey::<f32>::from_str("#Z");
     match result {
-        Err(chromatic::ParseGreyError::ParseHex(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseHex(_)) => { /* Expected */ }
         _ => panic!("Expected ParseHex error"),
     }
 

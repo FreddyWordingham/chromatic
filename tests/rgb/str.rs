@@ -124,40 +124,40 @@ fn test_parse_rgb_error_types() {
     // Test ParseFloat error
     let result = Rgb::<f32>::from_str("not_a_number, 0.5, 0.5");
     match result {
-        Err(chromatic::ParseRgbError::ParseFloat(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseFloat(_)) => { /* Expected */ }
         _ => panic!("Expected ParseFloat error"),
     }
 
     // Test ParseHex error
     let result = Rgb::<f32>::from_str("#GHIJKL");
     match result {
-        Err(chromatic::ParseRgbError::ParseHex(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseHex(_)) => { /* Expected */ }
         _ => panic!("Expected ParseHex error"),
     }
 
     // Test InvalidFormat error (too few or too many characters in hex)
     let result = Rgb::<f32>::from_str("#12");
     match result {
-        Err(chromatic::ParseRgbError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     let result = Rgb::<f32>::from_str("#1234567");
     match result {
-        Err(chromatic::ParseRgbError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     // Test InvalidFormat error (not enough comma-separated values)
     let result = Rgb::<f32>::from_str("0.5, 0.5");
     match result {
-        Err(chromatic::ParseRgbError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     let result = Rgb::<f32>::from_str("0.1, 0.2, 0.3, 0.4");
     match result {
-        Err(chromatic::ParseRgbError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 

@@ -80,40 +80,40 @@ fn test_parse_grey_alpha_error_types() {
     // Test ParseFloat error
     let result = GreyAlpha::<f32>::from_str("not_a_number, 0.5");
     match result {
-        Err(chromatic::ParseGreyAlphaError::ParseFloat(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseFloat(_)) => { /* Expected */ }
         _ => panic!("Expected ParseFloat error"),
     }
 
     // Test ParseHex error
     let result = GreyAlpha::<f32>::from_str("#ZZ");
     match result {
-        Err(chromatic::ParseGreyAlphaError::ParseHex(_)) => { /* Expected */ }
+        Err(chromatic::ParseColourError::ParseHex(_)) => { /* Expected */ }
         _ => panic!("Expected ParseHex error"),
     }
 
     // Test InvalidFormat error (too few or too many characters in hex)
     let result = GreyAlpha::<f32>::from_str("#F");
     match result {
-        Err(chromatic::ParseGreyAlphaError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     let result = GreyAlpha::<f32>::from_str("#FFF");
     match result {
-        Err(chromatic::ParseGreyAlphaError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     // Test InvalidFormat error (not enough comma-separated values)
     let result = GreyAlpha::<f32>::from_str("0.5");
     match result {
-        Err(chromatic::ParseGreyAlphaError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 
     let result = GreyAlpha::<f32>::from_str("0.1, 0.2, 0.3");
     match result {
-        Err(chromatic::ParseGreyAlphaError::InvalidFormat) => { /* Expected */ }
+        Err(chromatic::ParseColourError::InvalidFormat) => { /* Expected */ }
         _ => panic!("Expected InvalidFormat error"),
     }
 

@@ -2,27 +2,12 @@
 
 use core::{
     fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
     ops::AddAssign,
     str::FromStr,
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::{Colour, GreyAlpha, LabRgb, LabRgba, Rgb, Rgba};
-
-/// Error parsing `Grey` from string.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum ParseGreyError<E> {
-    /// Error parsing float.
-    ParseFloat(E),
-    /// Error parsing hex string.
-    ParseHex(ParseIntError),
-    /// Value out of range.
-    OutOfRange,
-    /// Invalid format.
-    InvalidFormat,
-}
+use crate::{Colour, GreyAlpha, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};
 
 /// Monochrome colour.
 #[derive(Debug, Clone, Copy)]
@@ -154,7 +139,7 @@ impl<T> FromStr for Grey<T>
 where
     T: Display + AddAssign + Float + FromStr + ToPrimitive,
 {
-    type Err = ParseGreyError<<T as FromStr>::Err>;
+    type Err = ParseColourError<<T as FromStr>::Err>;
 
     #[expect(clippy::min_ident_chars, reason = "The variable `s` for a string is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
@@ -165,27 +150,27 @@ where
             match hex.len() {
                 // Short form: #G
                 1 => {
-                    let value = u8::from_str_radix(hex, 16).map_err(ParseGreyError::ParseHex)?;
+                    let value = u8::from_str_radix(hex, 16).map_err(ParseColourError::ParseHex)?;
                     // Expand short form (e.g., #F becomes #FF)
-                    let grey = T::from(value * 17).ok_or(ParseGreyError::OutOfRange)? / T::from(255).unwrap();
+                    let grey = T::from(value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                     Ok(Self::new(grey))
                 }
                 // Long form: #GG
                 2 => {
-                    let value = u8::from_str_radix(hex, 16).map_err(ParseGreyError::ParseHex)?;
-                    let grey = T::from(value).ok_or(ParseGreyError::OutOfRange)? / T::from(255).unwrap();
+                    let value = u8::from_str_radix(hex, 16).map_err(ParseColourError::ParseHex)?;
+                    let grey = T::from(value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                     Ok(Self::new(grey))
                 }
-                _ => Err(ParseGreyError::InvalidFormat),
+                _ => Err(ParseColourError::InvalidFormat),
             }
         } else {
             // Parse as comma-separated float values
             let parts: Vec<&str> = s.split(',').collect();
             if parts.len() != 1 {
-                return Err(ParseGreyError::InvalidFormat);
+                return Err(ParseColourError::InvalidFormat);
             }
 
-            let grey = parts[0].trim().parse::<T>().map_err(ParseGreyError::ParseFloat)?;
+            let grey = parts[0].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
             Ok(Self::new(grey))
         }
     }

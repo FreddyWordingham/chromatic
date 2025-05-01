@@ -8,7 +8,7 @@ use core::{
 use num_traits::{Float, ToPrimitive};
 
 use crate::{
-    Colour, Grey, GreyAlpha, LabRgba, ParseRgbError, Rgb, Rgba,
+    Colour, Grey, GreyAlpha, LabRgba, ParseColourError, Rgb, Rgba,
     colours::lab_utils::{lab_to_xyz, rgb_to_xyz_components, xyz_to_lab, xyz_to_rgb_components},
 };
 
@@ -315,7 +315,7 @@ impl<T> FromStr for LabRgb<T>
 where
     T: Display + AddAssign + Float + FromStr + ToPrimitive,
 {
-    type Err = ParseRgbError<<T as FromStr>::Err>;
+    type Err = ParseColourError<<T as FromStr>::Err>;
 
     #[expect(clippy::min_ident_chars, reason = "The variable `s` for a string is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
@@ -331,14 +331,14 @@ where
                     let g_digit = chars.next().unwrap();
                     let b_digit = chars.next().unwrap();
 
-                    let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseRgbError::ParseHex)?;
-                    let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseRgbError::ParseHex)?;
-                    let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseRgbError::ParseHex)?;
+                    let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                    let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                    let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
 
                     // Expand short form (e.g., #F00 becomes #FF0000)
-                    let scaled_red = T::from(red * 17).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
-                    let scaled_green = T::from(green * 17).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
-                    let scaled_blue = T::from(blue * 17).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_red = T::from(red * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_green = T::from(green * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_blue = T::from(blue * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
                     Ok(Self::new(scaled_red, scaled_green, scaled_blue))
                 }
@@ -352,28 +352,28 @@ where
                     let b1 = chars.next().unwrap().to_string();
                     let b2 = chars.next().unwrap().to_string();
 
-                    let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseRgbError::ParseHex)?;
-                    let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseRgbError::ParseHex)?;
-                    let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseRgbError::ParseHex)?;
+                    let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
+                    let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
+                    let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseColourError::ParseHex)?;
 
-                    let scaled_red = T::from(red).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
-                    let scaled_green = T::from(green).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
-                    let scaled_blue = T::from(blue).ok_or(ParseRgbError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                    let scaled_blue = T::from(blue).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
                     Ok(Self::new(scaled_red, scaled_green, scaled_blue))
                 }
-                _ => Err(ParseRgbError::InvalidFormat),
+                _ => Err(ParseColourError::InvalidFormat),
             }
         } else {
             // Look for comma-separated float values
             let parts: Vec<&str> = s.split(',').collect();
             if parts.len() != 3 {
-                return Err(ParseRgbError::InvalidFormat);
+                return Err(ParseColourError::InvalidFormat);
             }
 
-            let red = parts[0].trim().parse::<T>().map_err(ParseRgbError::ParseFloat)?;
-            let green = parts[1].trim().parse::<T>().map_err(ParseRgbError::ParseFloat)?;
-            let blue = parts[2].trim().parse::<T>().map_err(ParseRgbError::ParseFloat)?;
+            let red = parts[0].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
+            let green = parts[1].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
+            let blue = parts[2].trim().parse::<T>().map_err(ParseColourError::ParseFloat)?;
 
             Ok(Self::new(red, green, blue))
         }
