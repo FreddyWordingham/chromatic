@@ -27,7 +27,16 @@ pub enum ParseRgbaError<E> {
 /// RGB colour representation with transparency.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
-pub struct Rgba<T: Float>(T, T, T, T);
+pub struct Rgba<T: Float> {
+    /// Red component.
+    red: T,
+    /// Green component.
+    green: T,
+    /// Blue component.
+    blue: T,
+    /// Alpha component.
+    alpha: T,
+}
 
 impl<T: Display + AddAssign + Float> Rgba<T> {
     /// Create a new `Rgba` instance.
@@ -66,31 +75,31 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
         green = green.clamp(T::zero(), T::one());
         blue = blue.clamp(T::zero(), T::one());
         alpha = alpha.clamp(T::zero(), T::one());
-        Self(red, green, blue, alpha)
+        Self { red, green, blue, alpha }
     }
 
     /// Get the red component.
     #[inline]
     pub const fn red(&self) -> T {
-        self.0
+        self.red
     }
 
     /// Get the green component.
     #[inline]
     pub const fn green(&self) -> T {
-        self.1
+        self.green
     }
 
     /// Get the blue component.
     #[inline]
     pub const fn blue(&self) -> T {
-        self.2
+        self.blue
     }
 
     /// Get the alpha component.
     #[inline]
     pub const fn alpha(&self) -> T {
-        self.3
+        self.alpha
     }
 
     /// Set the red component.
@@ -101,7 +110,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
     #[inline]
     pub fn set_red(&mut self, red: T) {
         assert!(red >= T::zero() && red <= T::one(), "Red component must be between 0 and 1.");
-        self.0 = red;
+        self.red = red;
     }
 
     /// Set the green component.
@@ -115,7 +124,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
             green >= T::zero() && green <= T::one(),
             "Green component must be between 0 and 1."
         );
-        self.1 = green;
+        self.green = green;
     }
 
     /// Set the blue component.
@@ -129,7 +138,7 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
             blue >= T::zero() && blue <= T::one(),
             "Blue component must be between 0 and 1."
         );
-        self.2 = blue;
+        self.blue = blue;
     }
 
     /// Set the alpha component.
@@ -143,13 +152,13 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
             alpha >= T::zero() && alpha <= T::one(),
             "Alpha component must be between 0 and 1."
         );
-        self.3 = alpha;
+        self.alpha = alpha;
     }
 
     /// Convert to RGB by discarding the alpha channel.
     #[inline]
     pub fn to_rgb(&self) -> crate::Rgb<T> {
-        crate::Rgb::new(self.0, self.1, self.2)
+        crate::Rgb::new(self.red, self.green, self.blue)
     }
 
     /// Create from RGB with full opacity.
@@ -349,7 +358,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
 
     #[inline]
     fn components(&self) -> [T; 4] {
-        [self.0, self.1, self.2, self.3]
+        [self.red, self.green, self.blue, self.alpha]
     }
 
     #[inline]
@@ -375,10 +384,10 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
     #[inline]
     fn to_bytes(self) -> [u8; 4] {
         let max = T::from(255_u8).unwrap();
-        let red = (self.0 * max).round().to_u8().unwrap();
-        let green = (self.1 * max).round().to_u8().unwrap();
-        let blue = (self.2 * max).round().to_u8().unwrap();
-        let alpha = (self.3 * max).round().to_u8().unwrap();
+        let red = (self.red * max).round().to_u8().unwrap();
+        let green = (self.green * max).round().to_u8().unwrap();
+        let blue = (self.blue * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         [red, green, blue, alpha]
     }
 
@@ -424,10 +433,10 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
 impl<T: Float + AddAssign + Display> PartialEq for Rgba<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        (self.0 - other.0).abs() <= Self::tolerance()
-            && (self.1 - other.1).abs() <= Self::tolerance()
-            && (self.2 - other.2).abs() <= Self::tolerance()
-            && (self.3 - other.3).abs() <= Self::tolerance()
+        (self.red - other.red).abs() <= Self::tolerance()
+            && (self.green - other.green).abs() <= Self::tolerance()
+            && (self.blue - other.blue).abs() <= Self::tolerance()
+            && (self.alpha - other.alpha).abs() <= Self::tolerance()
     }
 }
 
@@ -518,10 +527,10 @@ where
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(255_u8).unwrap();
-        let red = (self.0 * max).round().to_u8().unwrap();
-        let green = (self.1 * max).round().to_u8().unwrap();
-        let blue = (self.2 * max).round().to_u8().unwrap();
-        let alpha = (self.3 * max).round().to_u8().unwrap();
+        let red = (self.red * max).round().to_u8().unwrap();
+        let green = (self.green * max).round().to_u8().unwrap();
+        let blue = (self.blue * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         write!(f, "#{red:02X}{green:02X}{blue:02X}{alpha:02X}")
     }
 }

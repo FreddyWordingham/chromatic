@@ -27,7 +27,10 @@ pub enum ParseGreyError<E> {
 /// Monochrome colour.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
-pub struct Grey<T: Float>(T);
+pub struct Grey<T: Float> {
+    /// Grey component.
+    grey: T,
+}
 
 impl<T: Display + AddAssign + Float> Grey<T> {
     /// Create a new `Grey` instance.
@@ -45,13 +48,13 @@ impl<T: Display + AddAssign + Float> Grey<T> {
             );
         }
         grey = grey.clamp(T::zero(), T::one());
-        Self(grey)
+        Self { grey }
     }
 
     /// Get the grey component.
     #[inline]
     pub const fn grey(&self) -> T {
-        self.0
+        self.grey
     }
 
     /// Set the grey component.
@@ -65,7 +68,7 @@ impl<T: Display + AddAssign + Float> Grey<T> {
             grey >= T::zero() && grey <= T::one(),
             "Grey component must be between 0 and 1."
         );
-        self.0 = grey;
+        self.grey = grey;
     }
 
     // #[inline]
@@ -79,7 +82,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
 
     #[inline]
     fn components(&self) -> [T; 1] {
-        [self.0]
+        [self.grey]
     }
 
     #[inline]
@@ -99,7 +102,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
     #[inline]
     fn to_bytes(self) -> [u8; 1] {
         let max = T::from(255_u8).unwrap();
-        let value = (self.0 * max).round().to_u8().unwrap();
+        let value = (self.grey * max).round().to_u8().unwrap();
         [value]
     }
 
@@ -122,7 +125,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
 impl<T: Display + AddAssign + Float> PartialEq for Grey<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        (self.0 - other.0).abs() <= Self::tolerance()
+        (self.grey - other.grey).abs() <= Self::tolerance()
     }
 }
 
@@ -177,7 +180,7 @@ where
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(15_i32).unwrap();
-        let grey = (self.0 * max).round().to_u8().unwrap();
+        let grey = (self.grey * max).round().to_u8().unwrap();
         write!(f, "#{grey:X}")
     }
 }

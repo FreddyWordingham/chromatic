@@ -27,7 +27,12 @@ pub enum ParseGreyAlphaError<E> {
 /// Monochrome colour with transparency.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
-pub struct GreyAlpha<T: Float>(T, T);
+pub struct GreyAlpha<T: Float> {
+    /// Grey component.
+    grey: T,
+    /// Alpha component.
+    alpha: T,
+}
 
 impl<T: Display + AddAssign + Float> GreyAlpha<T> {
     /// Create a new `GreyAlpha` instance.
@@ -52,19 +57,19 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
         }
         grey = grey.clamp(T::zero(), T::one());
         alpha = alpha.clamp(T::zero(), T::one());
-        Self(grey, alpha)
+        Self { grey, alpha }
     }
 
     /// Get the grey component.
     #[inline]
     pub const fn grey(&self) -> T {
-        self.0
+        self.grey
     }
 
     /// Get the alpha component.
     #[inline]
     pub const fn alpha(&self) -> T {
-        self.1
+        self.alpha
     }
 
     /// Set the grey component.
@@ -78,7 +83,7 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
             grey >= T::zero() && grey <= T::one(),
             "Grey component must be between 0 and 1."
         );
-        self.0 = grey;
+        self.grey = grey;
     }
 
     /// Set the alpha component.
@@ -92,7 +97,7 @@ impl<T: Display + AddAssign + Float> GreyAlpha<T> {
             alpha >= T::zero() && alpha <= T::one(),
             "Alpha component must be between 0 and 1."
         );
-        self.1 = alpha;
+        self.alpha = alpha;
     }
 }
 
@@ -104,7 +109,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
 
     #[inline]
     fn components(&self) -> [T; 2] {
-        [self.0, self.1]
+        [self.grey, self.alpha]
     }
 
     #[inline]
@@ -126,8 +131,8 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     #[inline]
     fn to_bytes(self) -> [u8; 2] {
         let max = T::from(255_u8).unwrap();
-        let grey = (self.0 * max).round().to_u8().unwrap();
-        let alpha = (self.1 * max).round().to_u8().unwrap();
+        let grey = (self.grey * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         [grey, alpha]
     }
 
@@ -153,7 +158,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
 impl<T: Float + AddAssign + Display> PartialEq for GreyAlpha<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        (self.0 - other.0).abs() <= Self::tolerance() && (self.1 - other.1).abs() <= Self::tolerance()
+        (self.grey - other.grey).abs() <= Self::tolerance() && (self.alpha - other.alpha).abs() <= Self::tolerance()
     }
 }
 
@@ -229,8 +234,8 @@ where
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(15_i32).unwrap();
-        let grey = (self.0 * max).round().to_u8().unwrap();
-        let alpha = (self.1 * max).round().to_u8().unwrap();
+        let grey = (self.grey * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
         write!(f, "#{grey:X}{alpha:X}")
     }
 }
