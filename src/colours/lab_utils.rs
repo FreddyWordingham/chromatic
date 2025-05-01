@@ -1,3 +1,7 @@
+//! ## `lab_utils` Module
+//!
+//! This module provides utility functions for converting between different colour spaces, specifically RGB, Lab and XYZ.
+
 use num_traits::Float;
 
 /// Convert XYZ to Lab colour space.
@@ -49,10 +53,6 @@ pub fn lab_f<T: Float>(t: T) -> T {
 }
 
 /// Convert Lab to XYZ colour space.
-#[expect(
-    clippy::single_call_fn,
-    reason = "Packaging this code in a function makes it easier to maintain."
-)]
 #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
 #[inline]
 pub fn lab_to_xyz<T: Float>(lab: &[T; 3]) -> [T; 3] {
@@ -109,10 +109,6 @@ pub fn rgb_to_xyz_components<T: Float>(rgb: &[T; 3]) -> [T; 3] {
 }
 
 /// Convert XYZ to RGB colour space components.
-#[expect(
-    clippy::single_call_fn,
-    reason = "Packaging this code in a function makes it easier to maintain."
-)]
 #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
 #[inline]
 pub fn xyz_to_rgb_components<T: Float>(xyz: &[T; 3]) -> [T; 3] {

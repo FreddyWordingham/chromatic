@@ -7,7 +7,10 @@ use core::{
 };
 use num_traits::{Float, ToPrimitive};
 
-use crate::{Colour, Grey, GreyAlpha, LabRgb, ParseRgbaError, Rgb, Rgba, colours::lab_utils::*};
+use crate::{
+    Colour, Grey, GreyAlpha, LabRgb, ParseRgbaError, Rgb, Rgba,
+    colours::lab_utils::{lab_to_xyz, rgb_to_xyz_components, xyz_to_lab, xyz_to_rgb_components},
+};
 
 /// RGB colour representation with transparency using Lab colour space internally.
 #[derive(Debug, Clone, Copy)]
