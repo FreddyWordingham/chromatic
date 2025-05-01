@@ -6,6 +6,7 @@ mod grey;
 mod grey_alpha;
 mod lab_rgb;
 mod lab_rgba;
+mod lab_utils;
 mod rgb;
 mod rgba;
 

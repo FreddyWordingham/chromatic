@@ -66,7 +66,7 @@
 #![deny(unnameable_types)]
 // #![deny(unqualified_local_imports)]
 #![deny(unreachable_code)]
-#![deny(unreachable_pub)]
+// #![deny(unreachable_pub)]
 #![deny(unsafe_attr_outside_unsafe)]
 // #![deny(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
