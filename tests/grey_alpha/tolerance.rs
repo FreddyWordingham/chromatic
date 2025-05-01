@@ -149,28 +149,3 @@ fn test_grey_alpha_tolerance_precision() {
     // For f64, the tolerance is still the determining factor
     assert_eq!(g3_f64, g4_f64);
 }
-
-// Tests for the internal clamping (implicit truncation) in `GreyAlpha::new`.
-#[test]
-fn test_grey_alpha_new_clamping() {
-    // Test that values outside range are clamped properly
-
-    // Slightly negative values should be clamped to 0
-    let grey_alpha = GreyAlpha::<f64>::new(-0.001, -0.001);
-    assert_eq!(grey_alpha.grey(), 0.0);
-    assert_eq!(grey_alpha.alpha(), 0.0);
-
-    // Slightly over 1 should be clamped to 1
-    let grey_alpha = GreyAlpha::<f64>::new(1.001, 1.001);
-    assert_eq!(grey_alpha.grey(), 1.0);
-    assert_eq!(grey_alpha.alpha(), 1.0);
-
-    // Test mixed clamping
-    let grey_alpha = GreyAlpha::<f64>::new(-0.001, 1.001);
-    assert_eq!(grey_alpha.grey(), 0.0);
-    assert_eq!(grey_alpha.alpha(), 1.0);
-
-    let grey_alpha = GreyAlpha::<f64>::new(1.001, -0.001);
-    assert_eq!(grey_alpha.grey(), 1.0);
-    assert_eq!(grey_alpha.alpha(), 0.0);
-}

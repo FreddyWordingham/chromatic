@@ -142,12 +142,12 @@ impl<T: Float> LabRgb<T> {
         let green_gamma = Self::linear_to_gamma(green);
         let blue_gamma = Self::linear_to_gamma(blue);
 
-        // Clamp values to [0, 1] range
-        let red_clamped = red_gamma.max(T::zero()).min(T::one());
-        let green_clamped = green_gamma.max(T::zero()).min(T::one());
-        let blue_clamped = blue_gamma.max(T::zero()).min(T::one());
+        // // Clamp values to [0, 1] range
+        // let red_clamped = red_gamma.max(T::zero()).min(T::one());
+        // let green_clamped = green_gamma.max(T::zero()).min(T::one());
+        // let blue_clamped = blue_gamma.max(T::zero()).min(T::one());
 
-        [red_clamped, green_clamped, blue_clamped]
+        [red_gamma, green_gamma, blue_gamma]
     }
 
     /// Convert gamma-corrected RGB to linear RGB

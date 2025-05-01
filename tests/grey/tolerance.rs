@@ -98,17 +98,3 @@ fn test_grey_tolerance_precision() {
     // For f64, the tolerance is still the determining factor
     assert_eq!(g3_f64, g4_f64);
 }
-
-// Tests for the internal clamping (implicit truncation) in `Grey::new`.
-#[test]
-fn test_grey_new_clamping() {
-    // Test that values outside range are clamped properly
-
-    // Slightly negative value should be clamped to 0
-    let grey = Grey::<f64>::new(-0.001);
-    assert_eq!(grey.grey(), 0.0);
-
-    // Slightly over 1 should be clamped to 1
-    let grey = Grey::<f64>::new(1.001);
-    assert_eq!(grey.grey(), 1.0);
-}

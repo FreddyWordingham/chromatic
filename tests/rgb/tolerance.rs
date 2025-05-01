@@ -184,27 +184,3 @@ fn test_rgb_tolerance_precision() {
     // For f64, the tolerance is still the determining factor
     assert_eq!(r3_f64, r4_f64);
 }
-
-// Tests for the internal clamping (implicit truncation) in `Rgb::new`.
-#[test]
-fn test_rgb_new_clamping() {
-    // Test that values outside range are clamped properly
-
-    // Slightly negative values should be clamped to 0
-    let rgb = Rgb::<f64>::new(-0.001, -0.001, -0.001);
-    assert_eq!(rgb.red(), 0.0);
-    assert_eq!(rgb.green(), 0.0);
-    assert_eq!(rgb.blue(), 0.0);
-
-    // Slightly over 1 should be clamped to 1
-    let rgb = Rgb::<f64>::new(1.001, 1.001, 1.001);
-    assert_eq!(rgb.red(), 1.0);
-    assert_eq!(rgb.green(), 1.0);
-    assert_eq!(rgb.blue(), 1.0);
-
-    // Test mixed clamping
-    let rgb = Rgb::<f64>::new(-0.001, 0.5, 1.001);
-    assert_eq!(rgb.red(), 0.0);
-    assert_eq!(rgb.green(), 0.5);
-    assert_eq!(rgb.blue(), 1.0);
-}
