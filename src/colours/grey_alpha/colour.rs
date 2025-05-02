@@ -1,9 +1,9 @@
 //! Implements the `Colour` trait for `GreyAlpha`.
 
-use core::{fmt::Display, ops::AddAssign};
+use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
 
-use crate::{Colour, GreyAlpha};
+use crate::{Colour, GreyAlpha, ParseColourError};
 
 impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     #[inline]
@@ -20,6 +20,53 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     fn set_components(&mut self, components: [T; 2]) {
         self.set_grey(components[0]);
         self.set_alpha(components[1]);
+    }
+
+    #[inline]
+    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+        let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+        match components.len() {
+            // Short form: #GA
+            2 => {
+                let mut chars = components.chars();
+                let grey_digit = chars.next().unwrap();
+                let alpha_digit = chars.next().unwrap();
+
+                let grey_value = u8::from_str_radix(&grey_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                let alpha_value = u8::from_str_radix(&alpha_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+
+                // Expand short form (e.g., #FA becomes #FFAA)
+                let grey = T::from(grey_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let alpha = T::from(alpha_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+
+                Ok(Self::new(grey, alpha))
+            }
+            // Long form: #GGAA
+            4 => {
+                let mut chars = components.chars();
+                let g1 = chars.next().unwrap().to_string();
+                let g2 = chars.next().unwrap().to_string();
+                let a1 = chars.next().unwrap().to_string();
+                let a2 = chars.next().unwrap().to_string();
+
+                let grey_value = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let alpha_value = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseColourError::ParseHex)?;
+
+                let grey = T::from(grey_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let alpha = T::from(alpha_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+
+                Ok(Self::new(grey, alpha))
+            }
+            _ => Err(ParseColourError::InvalidFormat),
+        }
+    }
+
+    #[inline]
+    fn to_hex(self) -> String {
+        let max = T::from(255_i32).unwrap();
+        let grey = (self.grey * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
+        format!("#{grey:02X}{alpha:02X}")
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

@@ -1,15 +1,17 @@
-use chromatic::{ColourMap, GreyAlpha};
+use chromatic::{Colour, ColourMap, GreyAlpha};
 
 fn main() {
-    let grey1 = GreyAlpha::<f32>::new(0.0, 1.0);
-    let grey2 = GreyAlpha::<f32>::new(1.0, 1.0);
+    let col_a = GreyAlpha::<f32>::new(0.0, 1.0);
+    let col_b = GreyAlpha::<f32>::new(1.0, 0.1);
     let positions = [0.0f32, 1.0f32];
 
-    let cmap = ColourMap::new(&[grey1, grey2], &positions);
+    let cmap = ColourMap::new(&[col_a, col_b], &positions);
 
-    for i in 0..=10 {
-        let pos = i as f32 / 10.0;
+    for i in 0..=100 {
+        let pos = i as f32 / 100.0;
         let colour = cmap.sample(pos);
-        println!("Position: {}, Colour: {:?}", pos, colour);
+        println!("{} {}", colour, colour.to_hex());
     }
+
+    println!("{}", cmap);
 }

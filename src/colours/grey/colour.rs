@@ -1,9 +1,9 @@
 //! Implements the `Colour` trait for `Grey`.
 
-use core::{fmt::Display, ops::AddAssign};
+use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
 
-use crate::{Colour, Grey};
+use crate::{Colour, Grey, ParseColourError};
 
 impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
     #[inline]
@@ -19,6 +19,34 @@ impl<T: Display + AddAssign + Float> Colour<T, 1> for Grey<T> {
     #[inline]
     fn set_components(&mut self, components: [T; 1]) {
         self.set_grey(components[0]);
+    }
+
+    #[inline]
+    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+        let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+        match components.len() {
+            // Short form: #G
+            1 => {
+                let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
+                // Expand short form (e.g., #F becomes #FF)
+                let grey = T::from(value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                Ok(Self::new(grey))
+            }
+            // Long form: #GG
+            2 => {
+                let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
+                let grey = T::from(value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                Ok(Self::new(grey))
+            }
+            _ => Err(ParseColourError::InvalidFormat),
+        }
+    }
+
+    #[inline]
+    fn to_hex(self) -> String {
+        let max = T::from(255_i32).unwrap();
+        let grey = (self.grey * max).round().to_u8().unwrap();
+        format!("#{grey:02X}")
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

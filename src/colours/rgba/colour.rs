@@ -1,9 +1,9 @@
 //! Implements the `Colour` trait for `Rgba`.
 
-use core::{fmt::Display, ops::AddAssign};
+use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
 
-use crate::{Colour, Rgba};
+use crate::{Colour, ParseColourError, Rgba};
 
 impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
     #[inline]
@@ -22,6 +22,69 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
         self.set_green(components[1]);
         self.set_blue(components[2]);
         self.set_alpha(components[3]);
+    }
+
+    #[inline]
+    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+        let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+        match components.len() {
+            // Short form: #RGBA
+            4 => {
+                let mut chars = components.chars();
+                let r_digit = chars.next().unwrap();
+                let g_digit = chars.next().unwrap();
+                let b_digit = chars.next().unwrap();
+                let a_digit = chars.next().unwrap();
+
+                let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                let alpha = u8::from_str_radix(&a_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+
+                // Expand short form (e.g., #F00F becomes #FF00FF)
+                let scaled_red = T::from(red * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_green = T::from(green * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_blue = T::from(blue * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_alpha = T::from(alpha * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+
+                Ok(Self::new(scaled_red, scaled_green, scaled_blue, scaled_alpha))
+            }
+            // Long form: #RRGGBBAA
+            8 => {
+                let mut chars = components.chars();
+                let r1 = chars.next().unwrap().to_string();
+                let r2 = chars.next().unwrap().to_string();
+                let g1 = chars.next().unwrap().to_string();
+                let g2 = chars.next().unwrap().to_string();
+                let b1 = chars.next().unwrap().to_string();
+                let b2 = chars.next().unwrap().to_string();
+                let a1 = chars.next().unwrap().to_string();
+                let a2 = chars.next().unwrap().to_string();
+
+                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let alpha = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseColourError::ParseHex)?;
+
+                let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_blue = T::from(blue).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_alpha = T::from(alpha).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+
+                Ok(Self::new(scaled_red, scaled_green, scaled_blue, scaled_alpha))
+            }
+            _ => Err(ParseColourError::InvalidFormat),
+        }
+    }
+
+    #[inline]
+    fn to_hex(self) -> String {
+        let max = T::from(255_u8).unwrap();
+        let red = (self.red * max).round().to_u8().unwrap();
+        let green = (self.green * max).round().to_u8().unwrap();
+        let blue = (self.blue * max).round().to_u8().unwrap();
+        let alpha = (self.alpha * max).round().to_u8().unwrap();
+        format!("#{red:02X}{green:02X}{blue:02X}{alpha:02X}")
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

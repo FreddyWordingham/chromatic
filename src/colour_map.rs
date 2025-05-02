@@ -2,8 +2,12 @@
 //!
 //! This module provides the `ColourMap` struct, which allows for interpolation between colours.
 
-use core::ops::AddAssign;
+use core::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    ops::AddAssign,
+};
 use num_traits::Float;
+use terminal_size::{Width, terminal_size};
 
 use crate::Colour;
 
@@ -126,5 +130,25 @@ where
     #[inline]
     pub fn positions(&self) -> &[T] {
         &self.positions
+    }
+}
+
+impl<C, T, const N: usize> Display for ColourMap<C, T, N>
+where
+    C: Display + Clone + Colour<T, N>,
+    T: AddAssign + Float,
+{
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        if let Some((Width(w), _)) = terminal_size() {
+            for i in 0..w {
+                let t = T::from(i).unwrap() / T::from(w - 1).unwrap();
+                let colour = self.sample(t);
+                write!(f, "{}", colour)?;
+            }
+            Ok(())
+        } else {
+            write!(f, "cmap")
+        }
     }
 }

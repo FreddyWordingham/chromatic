@@ -2,8 +2,10 @@
 //!
 //! This module provides the `Colour` trait, which is implemented by all colour types.
 
-use core::ops::AddAssign;
+use core::{num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
+
+use crate::ParseColourError;
 
 /// Common trait for all colour types.
 pub trait Colour<T: AddAssign + Float, const N: usize> {
@@ -20,6 +22,16 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
 
     /// Set the components of the colour from a slice.
     fn set_components(&mut self, components: [T; N]);
+
+    /// Create a new colour from a hex string.
+    #[must_use]
+    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>>
+    where
+        Self: Sized;
+
+    /// Convert the colour to a hex string.
+    #[must_use]
+    fn to_hex(self) -> String;
 
     /// Create a new colour from a byte array.
     #[must_use]
