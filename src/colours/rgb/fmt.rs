@@ -11,10 +11,13 @@ use crate::Rgb;
 /// Character used to print the colour in the terminal.
 const BLOCK: char = '\u{2588}';
 
-impl<T: Display + AddAssign + Float> Display for Rgb<T>
+impl<T> Display for Rgb<T>
 where
-    T: Float + ToPrimitive,
+    T: AddAssign + Display + Float + ToPrimitive,
 {
+    #[expect(clippy::min_ident_chars, reason = "Variable `f` for `Formatter` is idiomatic.")]
+    #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(255_i32).unwrap();

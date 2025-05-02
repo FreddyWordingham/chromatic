@@ -138,13 +138,20 @@ where
     C: Display + Clone + Colour<T, N>,
     T: AddAssign + Float,
 {
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "Variable `f` for `Formatter` is idiomatic. Variable `t` for an interpolation factor is idiomatic."
+    )]
+    #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        if let Some((Width(w), _)) = terminal_size() {
-            for i in 0..w {
-                let t = T::from(i).unwrap() / T::from(w - 1).unwrap();
+        if let Some((Width(mut width), _)) = terminal_size() {
+            width = width.max(1);
+            for i in 0..width {
+                let t = T::from(i).unwrap() / T::from((width - 1).max(1)).unwrap();
                 let colour = self.sample(t);
-                write!(f, "{}", colour)?;
+                write!(f, "{colour}")?;
             }
             Ok(())
         } else {

@@ -32,6 +32,8 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for LabRgba<T> {
         self.alpha = components[3];
     }
 
+    #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
         let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
@@ -85,6 +87,7 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for LabRgba<T> {
         }
     }
 
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn to_hex(self) -> String {
         let rgb = self.rgb_components();

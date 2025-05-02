@@ -24,7 +24,10 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
     fn set_components(&mut self, components: [T; N]);
 
     /// Create a new colour from a hex string.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the hex string is invalid or out of range.
     fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>>
     where
         Self: Sized;
