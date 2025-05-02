@@ -1,6 +1,5 @@
 //! Monochrome colour representation.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 mod colour;
@@ -16,7 +15,7 @@ pub struct Grey<T: Float> {
     grey: T,
 }
 
-impl<T: Display + AddAssign + Float> Grey<T> {
+impl<T: Float> Grey<T> {
     /// Create a new `Grey` instance.
     ///
     /// # Panics
@@ -24,7 +23,10 @@ impl<T: Display + AddAssign + Float> Grey<T> {
     /// Panics if the component is not in [0, 1].
     #[inline]
     pub fn new(grey: T) -> Self {
-        assert!(!(grey < T::zero() || grey > T::one()), "Grey component {grey} out of [0, 1].");
+        assert!(
+            !(grey < T::zero() || grey > T::one()),
+            "Grey component must be between 0 and 1."
+        );
         Self { grey }
     }
 

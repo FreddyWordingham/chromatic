@@ -1,11 +1,11 @@
 //! Implements the `Colour` trait for `Rgba`.
 
-use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
+use core::num::ParseIntError;
 use num_traits::Float;
 
 use crate::{Colour, ParseColourError, Rgba};
 
-impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
+impl<T: Float> Colour<T, 4> for Rgba<T> {
     #[inline]
     fn from_components(components: [T; 4]) -> Self {
         Self::new(components[0], components[1], components[2], components[3])
@@ -123,7 +123,10 @@ impl<T: Display + AddAssign + Float> Colour<T, 4> for Rgba<T> {
     )]
     #[inline]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
+        assert!(
+            t >= T::zero() && t <= T::one(),
+            "Interpolation factor must be in range [0, 1]."
+        );
         Self::new(
             lhs.red() * (T::one() - t) + rhs.red() * t,
             lhs.green() * (T::one() - t) + rhs.green() * t,

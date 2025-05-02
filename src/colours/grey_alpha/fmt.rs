@@ -8,10 +8,7 @@ use crate::GreyAlpha;
 /// Character used to print the colour in the terminal.
 const BLOCK: char = '\u{2588}';
 
-impl<T> Display for GreyAlpha<T>
-where
-    T: Float,
-{
+impl<T: Float> Display for GreyAlpha<T> {
     #[expect(clippy::min_ident_chars, reason = "Variable `f` for `Formatter` is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

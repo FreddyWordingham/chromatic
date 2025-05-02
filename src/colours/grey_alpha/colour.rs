@@ -1,11 +1,11 @@
 //! Implements the `Colour` trait for `GreyAlpha`.
 
-use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
+use core::num::ParseIntError;
 use num_traits::Float;
 
 use crate::{Colour, GreyAlpha, ParseColourError};
 
-impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
+impl<T: Float> Colour<T, 2> for GreyAlpha<T> {
     #[inline]
     fn from_components(components: [T; 2]) -> Self {
         Self::new(components[0], components[1])
@@ -101,7 +101,10 @@ impl<T: Display + AddAssign + Float> Colour<T, 2> for GreyAlpha<T> {
     )]
     #[inline]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
+        assert!(
+            t >= T::zero() && t <= T::one(),
+            "Interpolation factor must be in range [0, 1]."
+        );
         Self::new(
             lhs.grey() * (T::one() - t) + rhs.grey() * t,
             lhs.alpha() * (T::one() - t) + rhs.alpha() * t,

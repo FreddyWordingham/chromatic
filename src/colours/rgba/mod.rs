@@ -1,6 +1,5 @@
 //! RGB colour representation with transparency.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 mod colour;
@@ -22,7 +21,7 @@ pub struct Rgba<T: Float> {
     alpha: T,
 }
 
-impl<T: Display + AddAssign + Float> Rgba<T> {
+impl<T: Float> Rgba<T> {
     /// Create a new `Rgba` instance.
     ///
     /// # Panics
@@ -30,15 +29,18 @@ impl<T: Display + AddAssign + Float> Rgba<T> {
     /// Panics if any component is not in [0, 1].
     #[inline]
     pub fn new(red: T, green: T, blue: T, alpha: T) -> Self {
-        assert!(!(red < T::zero() || red > T::one()), "Red component {red} out of [0, 1].");
+        assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
         assert!(
             !(green < T::zero() || green > T::one()),
-            "Green component {green} out of [0, 1]."
+            "Green component must be between 0 and 1."
         );
-        assert!(!(blue < T::zero() || blue > T::one()), "Blue component {blue} out of [0, 1].");
+        assert!(
+            !(blue < T::zero() || blue > T::one()),
+            "Blue component must be between 0 and 1."
+        );
         assert!(
             !(alpha < T::zero() || alpha > T::one()),
-            "Alpha component {alpha} out of [0, 1]."
+            "Alpha component must be between 0 and 1."
         );
         Self { red, green, blue, alpha }
     }

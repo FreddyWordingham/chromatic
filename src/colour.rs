@@ -8,7 +8,7 @@ use num_traits::Float;
 use crate::ParseColourError;
 
 /// Common trait for all colour types.
-pub trait Colour<T: AddAssign + Float, const N: usize> {
+pub trait Colour<T: Float, const N: usize> {
     /// Number of components in the colour.
     const NUM_COMPONENTS: usize = N;
 
@@ -71,7 +71,8 @@ pub trait Colour<T: AddAssign + Float, const N: usize> {
     #[inline]
     fn mix(colours: &[Self], weights: &[T]) -> Self
     where
-        Self: Sized + Clone,
+        Self: Clone,
+        T: AddAssign,
     {
         assert!(!colours.is_empty(), "Cannot mix an empty list of colours.");
         assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");

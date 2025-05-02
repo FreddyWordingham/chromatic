@@ -1,20 +1,14 @@
 //! Print `LabRgba` to the terminal.
 
-use core::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    ops::AddAssign,
-};
-use num_traits::{Float, ToPrimitive};
+use core::fmt::{Display, Formatter, Result as FmtResult};
+use num_traits::Float;
 
 use crate::LabRgba;
 
 /// Character used to print the colour in the terminal.
 const BLOCK: char = '\u{2588}';
 
-impl<T> Display for LabRgba<T>
-where
-    T: AddAssign + Display + Float + ToPrimitive,
-{
+impl<T: Float> Display for LabRgba<T> {
     #[expect(clippy::min_ident_chars, reason = "Variable `f` for `Formatter` is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

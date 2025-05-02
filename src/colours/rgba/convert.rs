@@ -1,11 +1,10 @@
 //! Convert `Rgba` to other colour types.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 use crate::{Grey, GreyAlpha, LabRgb, LabRgba, Rgb, Rgba};
 
-impl<T: Display + AddAssign + Float> Rgba<T> {
+impl<T: Float> Rgba<T> {
     /// Convert to `Grey` by averaging the RGB components.
     ///
     /// # Panics

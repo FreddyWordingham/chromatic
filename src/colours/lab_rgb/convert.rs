@@ -1,11 +1,10 @@
 //! Convert `LabRgb` to other colour types.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 use crate::{Grey, GreyAlpha, LabRgb, LabRgba, Rgb, Rgba};
 
-impl<T: Display + AddAssign + Float> LabRgb<T> {
+impl<T: Float> LabRgb<T> {
     /// Convert to `Grey`.
     ///
     /// # Panics

@@ -2,10 +2,7 @@
 //!
 //! This module provides the `ColourMap` struct, which allows for interpolation between colours.
 
-use core::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    ops::AddAssign,
-};
+use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
 use terminal_size::{Width, terminal_size};
 
@@ -15,8 +12,8 @@ use crate::Colour;
 #[derive(Debug, Clone)]
 pub struct ColourMap<C, T, const N: usize>
 where
-    C: Colour<T, N> + Clone,
-    T: Copy + PartialOrd + Float + AddAssign,
+    C: Colour<T, N>,
+    T: Float,
 {
     /// The colours in the map.
     colours: Vec<C>,
@@ -26,8 +23,8 @@ where
 
 impl<C, T, const N: usize> ColourMap<C, T, N>
 where
-    C: Colour<T, N> + Clone,
-    T: Copy + PartialOrd + Float + AddAssign,
+    C: Clone + Colour<T, N>,
+    T: Float,
 {
     /// Create a new colour map from a list of colours and positions.
     ///
@@ -63,6 +60,24 @@ where
             colours: colours.to_vec(),
             positions: positions.to_vec(),
         }
+    }
+
+    /// Create a new colour map with uniformly spaced positions.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the list of colours is empty.
+    #[must_use]
+    #[inline]
+    pub fn new_uniform(colours: &[C]) -> Self {
+        assert!(!colours.is_empty(), "Colour map must have at least one colour.");
+        if colours.len() == 1 {
+            return Self::new(colours, &[T::zero()]);
+        }
+        let positions = (0..colours.len())
+            .map(|i| T::from(i).unwrap() / T::from(colours.len() - 1).unwrap())
+            .collect::<Vec<_>>();
+        Self::new(colours, &positions)
     }
 
     /// Sample the colour map at a given position.
@@ -136,7 +151,7 @@ where
 impl<C, T, const N: usize> Display for ColourMap<C, T, N>
 where
     C: Display + Clone + Colour<T, N>,
-    T: AddAssign + Float,
+    T: Float,
 {
     #[expect(
         clippy::min_ident_chars,

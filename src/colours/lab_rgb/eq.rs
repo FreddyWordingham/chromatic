@@ -1,11 +1,10 @@
 //! Compare two `LabRgb` colours for equality.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 use crate::{Colour as _, LabRgb};
 
-impl<T: Display + AddAssign + Float> PartialEq for LabRgb<T> {
+impl<T: Float> PartialEq for LabRgb<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // Compare Lab components directly

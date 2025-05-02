@@ -1,6 +1,5 @@
 //! RGB colour representation using Lab colour space interpolation.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 use crate::colours::lab_utils::{lab_to_xyz, rgb_to_xyz_components, xyz_to_lab, xyz_to_rgb_components};
@@ -32,7 +31,7 @@ impl<T: Float> LabRgb<T> {
     }
 }
 
-impl<T: Display + AddAssign + Float> LabRgb<T> {
+impl<T: Float> LabRgb<T> {
     /// Create a new `LabRgb` instance.
     ///
     /// # Panics
@@ -40,12 +39,15 @@ impl<T: Display + AddAssign + Float> LabRgb<T> {
     /// Panics if any component is not in [0, 1].
     #[inline]
     pub fn new(red: T, green: T, blue: T) -> Self {
-        assert!(!(red < T::zero() || red > T::one()), "Red component {red} out of [0, 1].");
+        assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
         assert!(
             !(green < T::zero() || green > T::one()),
-            "Green component {green} out of [0, 1]."
+            "Green component must be between 0 and 1."
         );
-        assert!(!(blue < T::zero() || blue > T::one()), "Blue component {blue} out of [0, 1].");
+        assert!(
+            !(blue < T::zero() || blue > T::one()),
+            "Blue component must be between 0 and 1."
+        );
 
         // Convert RGB to Lab
         let rgb = [red, green, blue];

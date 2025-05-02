@@ -1,11 +1,10 @@
 //! Convert `Grey` to other colour types.
 
-use core::{fmt::Display, ops::AddAssign};
 use num_traits::Float;
 
 use crate::{Grey, GreyAlpha, LabRgb, LabRgba, Rgb, Rgba};
 
-impl<T: Display + AddAssign + Float> Grey<T> {
+impl<T: Float> Grey<T> {
     /// Convert to `GreyAlpha`.
     #[inline]
     pub fn to_grey_alpha(&self, alpha: T) -> GreyAlpha<T> {

@@ -1,11 +1,11 @@
 //! Implements the `Colour` trait for `Rgb`.
 
-use core::{fmt::Display, num::ParseIntError, ops::AddAssign};
+use core::num::ParseIntError;
 use num_traits::Float;
 
 use crate::{Colour, ParseColourError, Rgb};
 
-impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
+impl<T: Float> Colour<T, 3> for Rgb<T> {
     #[inline]
     fn from_components(components: [T; 3]) -> Self {
         Self::new(components[0], components[1], components[2])
@@ -112,7 +112,10 @@ impl<T: Display + AddAssign + Float> Colour<T, 3> for Rgb<T> {
     )]
     #[inline]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        assert!(t >= T::zero() && t <= T::one(), "Interpolation factor {t} out of [0, 1].");
+        assert!(
+            t >= T::zero() && t <= T::one(),
+            "Interpolation factor must be in range [0, 1]."
+        );
         Self::new(
             lhs.red() * (T::one() - t) + rhs.red() * t,
             lhs.green() * (T::one() - t) + rhs.green() * t,
