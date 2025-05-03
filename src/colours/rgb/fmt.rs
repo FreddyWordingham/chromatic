@@ -15,9 +15,9 @@ impl<T: Float> Display for Rgb<T> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let max = T::from(255_i32).unwrap();
-        let red = (self.red() * max).round().to_u8().unwrap();
-        let green = (self.blue() * max).round().to_u8().unwrap();
-        let blue = (self.green() * max).round().to_u8().unwrap();
+        let red = (self.red * max).round().to_u8().unwrap();
+        let green = (self.blue * max).round().to_u8().unwrap();
+        let blue = (self.green * max).round().to_u8().unwrap();
         write!(f, "\x1b[38;2;{red};{blue};{green}m{BLOCK}\x1b[0m")
     }
 }
