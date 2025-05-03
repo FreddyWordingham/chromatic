@@ -6,42 +6,28 @@ use num_traits::Float;
 use crate::{Colour, Grey, ParseColourError};
 
 impl<T: Float> Colour<T, 1> for Grey<T> {
-    #[inline]
-    fn from_components(components: [T; 1]) -> Self {
-        Self::new(components[0])
-    }
-
-    #[inline]
-    fn components(&self) -> [T; 1] {
-        [self.grey]
-    }
-
-    #[inline]
-    fn set_components(&mut self, components: [T; 1]) {
-        self.set_grey(components[0]);
-    }
-
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
         let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
-        match components.len() {
+
+        let grey = match components.len() {
             // Short form: #G
             1 => {
                 let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
                 // Expand short form (e.g., #F becomes #FF)
-                let grey = T::from(value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                Ok(Self::new(grey))
+                T::from(value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap()
             }
             // Long form: #GG
             2 => {
                 let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
-                let grey = T::from(value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                Ok(Self::new(grey))
+                T::from(value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap()
             }
-            _ => Err(ParseColourError::InvalidFormat),
-        }
+            _ => return Err(ParseColourError::InvalidFormat),
+        };
+
+        Ok(Self::new(grey))
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

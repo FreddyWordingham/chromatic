@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-use crate::{Grey, GreyAlpha, LabRgb, LabRgba, Rgb, Rgba};
+use crate::{Grey, GreyAlpha, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
 
 impl<T: Float> Rgba<T> {
     /// Convert to `Grey` by averaging the RGB components.
@@ -27,21 +27,33 @@ impl<T: Float> Rgba<T> {
         GreyAlpha::new((self.red + self.green + self.blue) / T::from(3).unwrap(), self.alpha)
     }
 
-    /// Convert to `Rgb` by discarding the alpha channel.
+    /// Convert to `Hsv`.
     #[inline]
-    pub fn to_rgb(&self) -> Rgb<T> {
-        Rgb::new(self.red, self.green, self.blue)
+    pub fn to_hsv(&self) -> Hsv<T> {
+        Hsv::from_rgb(self.red, self.green, self.blue)
+    }
+
+    /// Convert to `Hsva`.
+    #[inline]
+    pub fn to_hsva(&self) -> Hsva<T> {
+        Hsva::from_rgba(self.red, self.green, self.blue, self.alpha)
     }
 
     /// Convert to `LabRgb`.
     #[inline]
     pub fn to_lab_rgb(&self) -> LabRgb<T> {
-        LabRgb::new(self.red, self.green, self.blue)
+        LabRgb::from_rgb(self.red, self.green, self.blue)
     }
 
     /// Convert to `LabRgba`.
     #[inline]
     pub fn to_lab_rgba(&self) -> LabRgba<T> {
-        LabRgba::new(self.red, self.green, self.blue, self.alpha)
+        LabRgba::from_rgba(self.red, self.green, self.blue, self.alpha)
+    }
+
+    /// Convert to `Rgb` by discarding the alpha channel.
+    #[inline]
+    pub fn to_rgb(&self) -> Rgb<T> {
+        Rgb::new(self.red, self.green, self.blue)
     }
 }

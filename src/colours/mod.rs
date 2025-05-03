@@ -4,6 +4,8 @@
 
 mod grey;
 mod grey_alpha;
+mod hsv;
+mod hsva;
 mod lab_rgb;
 mod lab_rgba;
 mod lab_utils;
@@ -13,6 +15,8 @@ mod rgba;
 
 pub use grey::Grey;
 pub use grey_alpha::GreyAlpha;
+pub use hsv::Hsv;
+pub use hsva::Hsva;
 pub use lab_rgb::LabRgb;
 pub use lab_rgba::LabRgba;
 pub use parse_colour_error::ParseColourError;

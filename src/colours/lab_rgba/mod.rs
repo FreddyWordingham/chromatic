@@ -35,13 +35,44 @@ impl<T: Float> LabRgba<T> {
 }
 
 impl<T: Float> LabRgba<T> {
+    /// Create a new `LabRgba` instance from Lab components.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any component is not in [0, 1].
+    #[inline]
+    pub fn new(lightness: T, a_axis: T, b_axis: T, alpha: T) -> Self {
+        assert!(
+            lightness >= T::zero() && lightness <= T::one(),
+            "Lightness component must be between 0 and 1."
+        );
+        assert!(
+            a_axis >= T::zero() && a_axis <= T::one(),
+            "A-axis component must be between 0 and 1."
+        );
+        assert!(
+            b_axis >= T::zero() && b_axis <= T::one(),
+            "B-axis component must be between 0 and 1."
+        );
+        assert!(
+            alpha >= T::zero() && alpha <= T::one(),
+            "Alpha component must be between 0 and 1."
+        );
+        Self {
+            lightness,
+            a_axis,
+            b_axis,
+            alpha,
+        }
+    }
+
     /// Create a new `LabRgba` instance.
     ///
     /// # Panics
     ///
     /// Panics if any component is not in [0, 1].
     #[inline]
-    pub fn new(red: T, green: T, blue: T, alpha: T) -> Self {
+    pub fn from_rgba(red: T, green: T, blue: T, alpha: T) -> Self {
         assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
         assert!(
             !(green < T::zero() || green > T::one()),
@@ -65,37 +96,6 @@ impl<T: Float> LabRgba<T> {
             lightness: lab[0],
             a_axis: lab[1],
             b_axis: lab[2],
-            alpha,
-        }
-    }
-
-    /// Create a new `LabRgba` instance from Lab components.
-    ///
-    /// # Panics
-    ///
-    /// Panics if any component is not in [0, 1].
-    #[inline]
-    pub fn from_lab(lightness: T, a_axis: T, b_axis: T, alpha: T) -> Self {
-        assert!(
-            lightness >= T::zero() && lightness <= T::one(),
-            "Lightness component must be between 0 and 1."
-        );
-        assert!(
-            a_axis >= T::zero() && a_axis <= T::one(),
-            "A-axis component must be between 0 and 1."
-        );
-        assert!(
-            b_axis >= T::zero() && b_axis <= T::one(),
-            "B-axis component must be between 0 and 1."
-        );
-        assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be between 0 and 1."
-        );
-        Self {
-            lightness,
-            a_axis,
-            b_axis,
             alpha,
         }
     }

@@ -1,11 +1,11 @@
-//! Implements the `Colour` trait for `Rgba`.
+//! Implements the `Colour` trait for `Hsva`.
 
 use core::num::ParseIntError;
 use num_traits::Float;
 
-use crate::{Colour, ParseColourError, Rgba};
+use crate::{Colour, Hsva, ParseColourError};
 
-impl<T: Float> Colour<T, 4> for Rgba<T> {
+impl<T: Float> Colour<T, 4> for Hsva<T> {
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
@@ -36,14 +36,14 @@ impl<T: Float> Colour<T, 4> for Rgba<T> {
             }
             // Long form: #RRGGBBAA
             8 => {
-                let r1 = chars.next().unwrap().to_string();
-                let r2 = chars.next().unwrap().to_string();
-                let g1 = chars.next().unwrap().to_string();
-                let g2 = chars.next().unwrap().to_string();
-                let b1 = chars.next().unwrap().to_string();
-                let b2 = chars.next().unwrap().to_string();
-                let a1 = chars.next().unwrap().to_string();
-                let a2 = chars.next().unwrap().to_string();
+                let r1 = chars.next().unwrap();
+                let r2 = chars.next().unwrap();
+                let g1 = chars.next().unwrap();
+                let g2 = chars.next().unwrap();
+                let b1 = chars.next().unwrap();
+                let b2 = chars.next().unwrap();
+                let a1 = chars.next().unwrap();
+                let a2 = chars.next().unwrap();
 
                 let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
                 let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
@@ -60,18 +60,21 @@ impl<T: Float> Colour<T, 4> for Rgba<T> {
             _ => return Err(ParseColourError::InvalidFormat),
         };
 
-        Ok(Self::new(red, green, blue, alpha))
+        Ok(Self::from_rgba(red, green, blue, alpha))
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn to_hex(self) -> String {
+        let (red, green, blue, alpha) = self.rgb_components();
+
         let max = T::from(255_u8).unwrap();
-        let red = (self.red * max).round().to_u8().unwrap();
-        let green = (self.green * max).round().to_u8().unwrap();
-        let blue = (self.blue * max).round().to_u8().unwrap();
-        let alpha = (self.alpha * max).round().to_u8().unwrap();
-        format!("#{red:02X}{green:02X}{blue:02X}{alpha:02X}")
+        let rounded_red = (red * max).round().to_u8().unwrap();
+        let rounded_green = (green * max).round().to_u8().unwrap();
+        let rounded_blue = (blue * max).round().to_u8().unwrap();
+        let rounded_alpha = (alpha * max).round().to_u8().unwrap();
+
+        format!("#{rounded_red:02X}{rounded_green:02X}{rounded_blue:02X}{rounded_alpha:02X}")
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
@@ -82,21 +85,25 @@ impl<T: Float> Colour<T, 4> for Rgba<T> {
         let green = T::from(bytes[1]).unwrap() / max;
         let blue = T::from(bytes[2]).unwrap() / max;
         let alpha = T::from(bytes[3]).unwrap() / max;
-        Self::new(red, green, blue, alpha)
+
+        Self::from_rgba(red, green, blue, alpha)
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn to_bytes(self) -> [u8; 4] {
+        let (red, green, blue, alpha) = self.rgb_components();
+
         let max = T::from(255_u8).unwrap();
-        let red = (self.red * max).round().to_u8().unwrap();
-        let green = (self.green * max).round().to_u8().unwrap();
-        let blue = (self.blue * max).round().to_u8().unwrap();
-        let alpha = (self.alpha * max).round().to_u8().unwrap();
-        [red, green, blue, alpha]
+        let rounded_red = (red * max).round().to_u8().unwrap();
+        let rounded_green = (green * max).round().to_u8().unwrap();
+        let rounded_blue = (blue * max).round().to_u8().unwrap();
+        let rounded_alpha = (alpha * max).round().to_u8().unwrap();
+
+        [rounded_red, rounded_green, rounded_blue, rounded_alpha]
     }
 
-    /// Linear interpolate between two `Rgba` colours.
+    /// Linear interpolate between two `Hsva` colours.
     ///
     /// # Panics
     ///
@@ -105,17 +112,37 @@ impl<T: Float> Colour<T, 4> for Rgba<T> {
         clippy::min_ident_chars,
         reason = "The variable `t` for an interpolation factor is idiomatic."
     )]
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
         assert!(
             t >= T::zero() && t <= T::one(),
             "Interpolation factor must be in range [0, 1]."
         );
-        Self::new(
-            lhs.red() * (T::one() - t) + rhs.red() * t,
-            lhs.green() * (T::one() - t) + rhs.green() * t,
-            lhs.blue() * (T::one() - t) + rhs.blue() * t,
-            lhs.alpha() * (T::one() - t) + rhs.alpha() * t,
-        )
+
+        // For hue, we need special handling to ensure we take the shortest path around the color wheel
+        let mut hue_diff = rhs.hue - lhs.hue;
+
+        // If the difference is greater than 180 degrees, it's shorter to go the other way around the color wheel
+        if hue_diff > T::from(180).unwrap() {
+            hue_diff = hue_diff - T::from(360).unwrap();
+        } else if hue_diff < T::from(-180).unwrap() {
+            hue_diff = hue_diff + T::from(360).unwrap();
+        }
+
+        // Calculate the interpolated hue and ensure it stays in [0, 360] range
+        let mut hue = lhs.hue + t * hue_diff;
+        if hue < T::zero() {
+            hue = hue + T::from(360).unwrap();
+        } else if hue > T::from(360).unwrap() {
+            hue = hue - T::from(360).unwrap();
+        }
+
+        // Linear interpolation for saturation, value, and alpha
+        let saturation = lhs.saturation * (T::one() - t) + rhs.saturation * t;
+        let value = lhs.value * (T::one() - t) + rhs.value * t;
+        let alpha = lhs.alpha * (T::one() - t) + rhs.alpha * t;
+
+        Self::new(hue, saturation, value, alpha)
     }
 }

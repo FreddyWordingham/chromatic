@@ -1,21 +1,24 @@
-//! Print `GreyAlpha` to the terminal.
+//! Print `Hsv` to the terminal.
 
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
 
-use crate::GreyAlpha;
+use crate::Hsv;
 
 /// Character used to print the colour in the terminal.
 const BLOCK: char = '\u{2588}';
 
-impl<T: Float> Display for GreyAlpha<T> {
+impl<T: Float> Display for Hsv<T> {
     #[expect(clippy::min_ident_chars, reason = "Variable `f` for `Formatter` is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let (red, green, blue) = self.rgb_components();
         let max = T::from(255_i32).unwrap();
-        let value = (self.grey * max).round().to_u8().unwrap();
-        write!(f, "\x1b[38;2;{value};{value};{value}m{BLOCK}\x1b[0m")
+        let rounded_red = (red * max).round().to_u8().unwrap();
+        let rounded_green = (green * max).round().to_u8().unwrap();
+        let rounded_blue = (blue * max).round().to_u8().unwrap();
+        write!(f, "\x1b[38;2;{rounded_red};{rounded_green};{rounded_blue}m{BLOCK}\x1b[0m")
     }
 }

@@ -67,6 +67,7 @@ where
     /// # Panics
     ///
     /// Panics if the list of colours is empty.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[must_use]
     #[inline]
     pub fn new_uniform(colours: &[C]) -> Self {

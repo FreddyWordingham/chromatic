@@ -37,7 +37,7 @@ let blue = Rgb::new(0.0, 0.0, 1.0);
 let transparent_green = Rgba::new(0.0, 1.0, 0.0, 0.5);
 
 // Parse from string (hex notation)
-let purple = Rgb::<f32>::from_str("#800080").unwrap();
+let purple = Rgb::<f32>::from_hex("#800080").unwrap();
 
 // Convert between colour spaces
 let grey = red.to_grey();

@@ -1,14 +1,12 @@
-use chromatic::{Colour, ColourMap, Rgb};
+use chromatic::{Colour, ColourMap, Hsv};
 
 fn main() {
     let cmap = ColourMap::new_uniform(&[
-        Rgb::new(0.0, 0.0, 0.5), // dark blue
-        Rgb::new(0.0, 0.0, 1.0), // blue
-        Rgb::new(0.0, 1.0, 1.0), // cyan
-        Rgb::new(0.0, 1.0, 0.0), // green
-        Rgb::new(1.0, 1.0, 0.0), // yellow
-        Rgb::new(1.0, 0.0, 0.0), // red
-        Rgb::new(0.5, 0.0, 0.0), // dark red
+        Hsv::new(0.0, 1.0, 1.0),
+        Hsv::new(90.0, 1.0, 1.0),
+        Hsv::new(180.0, 1.0, 1.0),
+        Hsv::new(270.0, 1.0, 1.0),
+        Hsv::new(360.0, 1.0, 1.0),
     ]);
 
     for i in 0..=100 {

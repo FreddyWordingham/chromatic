@@ -32,13 +32,39 @@ impl<T: Float> LabRgb<T> {
 }
 
 impl<T: Float> LabRgb<T> {
+    /// Create a new `LabRgb` instance from Lab components.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any component is not in [0, 1].
+    #[inline]
+    pub fn new(lightness: T, a_axis: T, b_axis: T) -> Self {
+        assert!(
+            lightness >= T::zero() && lightness <= T::one(),
+            "Lightness component must be between 0 and 1."
+        );
+        assert!(
+            a_axis >= T::zero() && a_axis <= T::one(),
+            "A-axis component must be between 0 and 1."
+        );
+        assert!(
+            b_axis >= T::zero() && b_axis <= T::one(),
+            "B-axis component must be between 0 and 1."
+        );
+        Self {
+            lightness,
+            a_axis,
+            b_axis,
+        }
+    }
+
     /// Create a new `LabRgb` instance.
     ///
     /// # Panics
     ///
     /// Panics if any component is not in [0, 1].
     #[inline]
-    pub fn new(red: T, green: T, blue: T) -> Self {
+    pub fn from_rgb(red: T, green: T, blue: T) -> Self {
         assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
         assert!(
             !(green < T::zero() || green > T::one()),
@@ -58,32 +84,6 @@ impl<T: Float> LabRgb<T> {
             lightness: lab[0],
             a_axis: lab[1],
             b_axis: lab[2],
-        }
-    }
-
-    /// Create a new `LabRgb` instance from Lab components.
-    ///
-    /// # Panics
-    ///
-    /// Panics if any component is not in [0, 1].
-    #[inline]
-    pub fn from_lab(lightness: T, a_axis: T, b_axis: T) -> Self {
-        assert!(
-            lightness >= T::zero() && lightness <= T::one(),
-            "Lightness component must be between 0 and 1."
-        );
-        assert!(
-            a_axis >= T::zero() && a_axis <= T::one(),
-            "A-axis component must be between 0 and 1."
-        );
-        assert!(
-            b_axis >= T::zero() && b_axis <= T::one(),
-            "B-axis component must be between 0 and 1."
-        );
-        Self {
-            lightness,
-            a_axis,
-            b_axis,
         }
     }
 

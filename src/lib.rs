@@ -90,6 +90,7 @@
 #![allow(clippy::arithmetic_side_effects, reason = "Too restrictive for this crate.")]
 #![allow(clippy::blanket_clippy_restriction_lints, reason = "More lints are always better.")]
 #![allow(clippy::default_numeric_fallback, reason = "Too restrictive for this crate.")]
+#![allow(clippy::else_if_without_else, reason = "Eliding the else branch is idiomatic in Rust.")]
 #![allow(clippy::float_arithmetic, reason = "Too restrictive for this crate.")]
 #![allow(clippy::implicit_return, reason = "Implicit returns are idiomatic in Rust.")]
 #![allow(clippy::indexing_slicing, reason = "Too restrictive for this crate.")]
@@ -121,4 +122,4 @@ mod colours;
 
 pub use colour::Colour;
 pub use colour_map::ColourMap;
-pub use colours::{Grey, GreyAlpha, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};
+pub use colours::{Grey, GreyAlpha, Hsv, Hsva, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};

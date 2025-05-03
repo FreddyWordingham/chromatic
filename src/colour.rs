@@ -12,17 +12,6 @@ pub trait Colour<T: Float, const N: usize> {
     /// Number of components in the colour.
     const NUM_COMPONENTS: usize = N;
 
-    /// Create a new colour from components.
-    #[must_use]
-    fn from_components(components: [T; N]) -> Self;
-
-    /// Get the components of the colour as a slice.
-    #[must_use]
-    fn components(&self) -> [T; N];
-
-    /// Set the components of the colour from a slice.
-    fn set_components(&mut self, components: [T; N]);
-
     /// Create a new colour from a hex string.
     ///
     /// # Errors

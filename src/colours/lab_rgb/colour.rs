@@ -3,42 +3,19 @@
 use core::num::ParseIntError;
 use num_traits::Float;
 
-use crate::{
-    Colour, LabRgb, ParseColourError,
-    colours::lab_utils::{rgb_to_xyz_components, xyz_to_lab},
-};
+use crate::{Colour, LabRgb, ParseColourError};
 
 impl<T: Float> Colour<T, 3> for LabRgb<T> {
-    #[inline]
-    fn from_components(components: [T; 3]) -> Self {
-        Self::new(components[0], components[1], components[2])
-    }
-
-    #[inline]
-    fn components(&self) -> [T; 3] {
-        // Convert Lab back to RGB for the external interface
-        self.rgb_components()
-    }
-
-    #[inline]
-    fn set_components(&mut self, components: [T; 3]) {
-        // Convert the entire RGB array to Lab at once
-        let xyz = rgb_to_xyz_components(&components);
-        let lab = xyz_to_lab(&xyz);
-        self.lightness = lab[0];
-        self.a_axis = lab[1];
-        self.b_axis = lab[2];
-    }
-
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
         let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
-        match components.len() {
+        let mut chars = components.chars();
+
+        let (red, green, blue) = match components.len() {
             // Short form: #RGB
             3 => {
-                let mut chars = components.chars();
                 let r_digit = chars.next().unwrap();
                 let g_digit = chars.next().unwrap();
                 let b_digit = chars.next().unwrap();
@@ -52,11 +29,10 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
                 let scaled_green = T::from(green * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let scaled_blue = T::from(blue * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
-                Ok(Self::new(scaled_red, scaled_green, scaled_blue))
+                (scaled_red, scaled_green, scaled_blue)
             }
             // Long form: #RRGGBB
             6 => {
-                let mut chars = components.chars();
                 let r1 = chars.next().unwrap().to_string();
                 let r2 = chars.next().unwrap().to_string();
                 let g1 = chars.next().unwrap().to_string();
@@ -72,10 +48,12 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
                 let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let scaled_blue = T::from(blue).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
-                Ok(Self::new(scaled_red, scaled_green, scaled_blue))
+                (scaled_red, scaled_green, scaled_blue)
             }
-            _ => Err(ParseColourError::InvalidFormat),
-        }
+            _ => return Err(ParseColourError::InvalidFormat),
+        };
+
+        Ok(Self::from_rgb(red, green, blue))
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
@@ -96,7 +74,7 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
         let red = T::from(bytes[0]).unwrap() / max;
         let green = T::from(bytes[1]).unwrap() / max;
         let blue = T::from(bytes[2]).unwrap() / max;
-        Self::new(red, green, blue)
+        Self::from_rgb(red, green, blue)
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]

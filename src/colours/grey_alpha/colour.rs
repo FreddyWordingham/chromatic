@@ -6,31 +6,16 @@ use num_traits::Float;
 use crate::{Colour, GreyAlpha, ParseColourError};
 
 impl<T: Float> Colour<T, 2> for GreyAlpha<T> {
-    #[inline]
-    fn from_components(components: [T; 2]) -> Self {
-        Self::new(components[0], components[1])
-    }
-
-    #[inline]
-    fn components(&self) -> [T; 2] {
-        [self.grey, self.alpha]
-    }
-
-    #[inline]
-    fn set_components(&mut self, components: [T; 2]) {
-        self.set_grey(components[0]);
-        self.set_alpha(components[1]);
-    }
-
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
         let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
-        match components.len() {
+        let mut chars = components.chars();
+
+        let (grey, alpha) = match components.len() {
             // Short form: #GA
             2 => {
-                let mut chars = components.chars();
                 let grey_digit = chars.next().unwrap();
                 let alpha_digit = chars.next().unwrap();
 
@@ -41,11 +26,10 @@ impl<T: Float> Colour<T, 2> for GreyAlpha<T> {
                 let grey = T::from(grey_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let alpha = T::from(alpha_value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
-                Ok(Self::new(grey, alpha))
+                (grey, alpha)
             }
             // Long form: #GGAA
             4 => {
-                let mut chars = components.chars();
                 let g1 = chars.next().unwrap().to_string();
                 let g2 = chars.next().unwrap().to_string();
                 let a1 = chars.next().unwrap().to_string();
@@ -57,10 +41,12 @@ impl<T: Float> Colour<T, 2> for GreyAlpha<T> {
                 let grey = T::from(grey_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let alpha = T::from(alpha_value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
 
-                Ok(Self::new(grey, alpha))
+                (grey, alpha)
             }
-            _ => Err(ParseColourError::InvalidFormat),
-        }
+            _ => return Err(ParseColourError::InvalidFormat),
+        };
+
+        Ok(Self::new(grey, alpha))
     }
 
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
