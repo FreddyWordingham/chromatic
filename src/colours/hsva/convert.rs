@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-use crate::{Grey, GreyAlpha, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
+use crate::{Grey, GreyAlpha, Hsl, Hsla, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
 
 impl<T: Float> Hsva<T> {
     /// Convert to `Grey`.
@@ -31,6 +31,33 @@ impl<T: Float> Hsva<T> {
     pub fn to_grey_alpha(&self) -> GreyAlpha<T> {
         let (red, green, blue, alpha) = self.rgb_components();
         GreyAlpha::new((red + green + blue) / T::from(3).unwrap(), alpha)
+    }
+
+    /// Convert to `Hsl`.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn to_hsl(&self) -> Hsl<T> {
+        if self.value == T::zero() {
+            return Hsl::new(self.hue, T::zero(), T::zero());
+        }
+        let lightness = self.value * (T::from(2).unwrap() - self.saturation) / T::from(2).unwrap();
+        let saturation = if lightness == T::zero() || lightness == T::one() {
+            T::zero()
+        } else {
+            (self.value - lightness) / lightness.min(T::one() - lightness)
+        };
+        Hsl::new(self.hue, saturation, lightness)
+    }
+
+    /// Convert to `Hsla`.
+    #[inline]
+    pub fn to_hsla(&self) -> Hsla<T> {
+        let hsl = self.to_hsl();
+        Hsla::new(hsl.hue(), hsl.saturation(), hsl.lightness(), self.alpha)
     }
 
     /// Convert to `Hsv` by discarding the alpha component.

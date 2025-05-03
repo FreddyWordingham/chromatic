@@ -122,4 +122,4 @@ mod colours;
 
 pub use colour::Colour;
 pub use colour_map::ColourMap;
-pub use colours::{Grey, GreyAlpha, Hsv, Hsva, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};
+pub use colours::{Grey, GreyAlpha, Hsl, Hsla, Hsv, Hsva, LabRgb, LabRgba, ParseColourError, Rgb, Rgba};

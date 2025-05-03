@@ -1,13 +1,11 @@
-//! Convert `Hsv` to other colour types.
+//! Convert `Hsl` to other colour types.
 
 use num_traits::Float;
 
 use crate::{Grey, GreyAlpha, Hsl, Hsla, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
 
-impl<T: Float> Hsv<T> {
+impl<T: Float> Hsl<T> {
     /// Convert to `Grey`.
-    ///
-    /// Converts HSV to RGB first, then averages the RGB components.
     ///
     /// # Panics
     ///
@@ -31,37 +29,48 @@ impl<T: Float> Hsv<T> {
         GreyAlpha::new((red + green + blue) / T::from(3).unwrap(), alpha)
     }
 
-    /// Convert to `Hsl`.
+    /// Convert to `Hsla`.
+    #[inline]
+    pub fn to_hsla(&self, alpha: T) -> Hsla<T> {
+        Hsla::new(self.hue, self.saturation, self.lightness, alpha)
+    }
+
+    /// Convert to `Hsv`.
     ///
     /// # Panics
     ///
     /// This function will not panic.
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
-    pub fn to_hsl(&self) -> Hsl<T> {
-        if self.value == T::zero() {
-            return Hsl::new(self.hue, T::zero(), T::zero());
+    pub fn to_hsv(&self) -> Hsv<T> {
+        // If lightness is 0, then HSV value is 0 (black)
+        if self.lightness == T::zero() {
+            return Hsv::new(self.hue, T::zero(), T::zero());
         }
-        let lightness = self.value * (T::from(2).unwrap() - self.saturation) / T::from(2).unwrap();
-        let saturation = if lightness == T::zero() || lightness == T::one() {
+
+        // If lightness is 1, then HSV value is 1 (white)
+        if self.lightness == T::one() {
+            return Hsv::new(self.hue, T::zero(), T::one());
+        }
+
+        // Calculate HSV value
+        let value = self.lightness + self.saturation * self.lightness.min(T::one() - self.lightness);
+
+        // Calculate HSV saturation
+        let saturation = if value == T::zero() {
             T::zero()
         } else {
-            (self.value - lightness) / lightness.min(T::one() - lightness)
+            T::from(2.0).unwrap() * (T::one() - self.lightness / value)
         };
-        Hsl::new(self.hue, saturation, lightness)
-    }
 
-    /// Convert to `Hsla`.
-    #[inline]
-    pub fn to_hsla(&self, alpha: T) -> Hsla<T> {
-        let hsl = self.to_hsl();
-        Hsla::new(hsl.hue(), hsl.saturation(), hsl.lightness(), alpha)
+        Hsv::new(self.hue, saturation, value)
     }
 
     /// Convert to `Hsva`.
     #[inline]
     pub fn to_hsva(&self, alpha: T) -> Hsva<T> {
-        Hsva::new(self.hue, self.saturation, self.value, alpha)
+        let hsv = self.to_hsv();
+        Hsva::new(hsv.hue(), hsv.saturation(), hsv.value(), alpha)
     }
 
     /// Convert to `Rgb`.
@@ -72,8 +81,6 @@ impl<T: Float> Hsv<T> {
     }
 
     /// Convert to `Rgba`.
-    ///
-    /// Alpha is set to 1.0 (fully opaque).
     #[inline]
     pub fn to_rgba(&self, alpha: T) -> Rgba<T> {
         let (red, green, blue) = self.rgb_components();
@@ -84,13 +91,13 @@ impl<T: Float> Hsv<T> {
     #[inline]
     pub fn to_lab_rgb(&self) -> LabRgb<T> {
         let (red, green, blue) = self.rgb_components();
-        LabRgb::new(red, green, blue)
+        LabRgb::from_rgb(red, green, blue)
     }
 
     /// Convert to `LabRgba`.
     #[inline]
     pub fn to_lab_rgba(&self, alpha: T) -> LabRgba<T> {
         let (red, green, blue) = self.rgb_components();
-        LabRgba::new(red, green, blue, alpha)
+        LabRgba::from_rgba(red, green, blue, alpha)
     }
 }

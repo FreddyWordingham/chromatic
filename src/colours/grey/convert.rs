@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-use crate::{Grey, GreyAlpha, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
+use crate::{Grey, GreyAlpha, Hsl, Hsla, Hsv, Hsva, LabRgb, LabRgba, Rgb, Rgba};
 
 impl<T: Float> Grey<T> {
     /// Convert to `GreyAlpha`.
@@ -11,10 +11,16 @@ impl<T: Float> Grey<T> {
         GreyAlpha::new(self.grey, alpha)
     }
 
-    /// Convert to `Rgb`.
+    /// Convert to `Hsl`.
     #[inline]
-    pub fn to_rgb(&self) -> Rgb<T> {
-        Rgb::new(self.grey, self.grey, self.grey)
+    pub fn to_hsl(&self) -> Hsl<T> {
+        Hsl::new(T::zero(), T::zero(), self.grey())
+    }
+
+    /// Convert to `Hsla`.
+    #[inline]
+    pub fn to_hsla(&self, alpha: T) -> Hsla<T> {
+        Hsla::new(T::zero(), T::zero(), self.grey(), alpha)
     }
 
     /// Convert to `Hsv`.
@@ -39,6 +45,12 @@ impl<T: Float> Grey<T> {
     #[inline]
     pub fn to_lab_rgba(&self, alpha: T) -> LabRgba<T> {
         LabRgba::new(self.grey, self.grey, self.grey, alpha)
+    }
+
+    /// Convert to `Rgb`.
+    #[inline]
+    pub fn to_rgb(&self) -> Rgb<T> {
+        Rgb::new(self.grey, self.grey, self.grey)
     }
 
     /// Convert to `Rgba`.

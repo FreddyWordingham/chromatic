@@ -4,6 +4,8 @@
 
 mod grey;
 mod grey_alpha;
+mod hsl;
+mod hsla;
 mod hsv;
 mod hsva;
 mod lab_rgb;
@@ -15,6 +17,8 @@ mod rgba;
 
 pub use grey::Grey;
 pub use grey_alpha::GreyAlpha;
+pub use hsl::Hsl;
+pub use hsla::Hsla;
 pub use hsv::Hsv;
 pub use hsva::Hsva;
 pub use lab_rgb::LabRgb;
