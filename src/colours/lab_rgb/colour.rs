@@ -6,6 +6,7 @@ use num_traits::Float;
 use crate::{Colour, LabRgb, ParseColourError};
 
 impl<T: Float> Colour<T, 3> for LabRgb<T> {
+    #[expect(clippy::min_ident_chars, reason = "Variable `v` for value is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
@@ -20,9 +21,19 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
                 let g_digit = chars.next().unwrap();
                 let b_digit = chars.next().unwrap();
 
-                let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                // Use to_digit instead of from_str_radix to avoid string allocations
+                let red = match r_digit.to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let green = match g_digit.to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let blue = match b_digit.to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
                 let scaled_red = T::from(red * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
@@ -33,16 +44,35 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
             }
             // Long form: #RRGGBB
             6 => {
-                let r1 = chars.next().unwrap().to_string();
-                let r2 = chars.next().unwrap().to_string();
-                let g1 = chars.next().unwrap().to_string();
-                let g2 = chars.next().unwrap().to_string();
-                let b1 = chars.next().unwrap().to_string();
-                let b2 = chars.next().unwrap().to_string();
+                // Process two characters at a time to avoid string allocations
+                let r1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let r2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let g1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let g2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let b1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let b2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => u8::try_from(v).unwrap(),
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
 
-                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let red = (r1 << 4) | r2;
+                let green = (g1 << 4) | g2;
+                let blue = (b1 << 4) | b2;
 
                 let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
@@ -105,9 +135,9 @@ impl<T: Float> Colour<T, 3> for LabRgb<T> {
         );
 
         // Direct interpolation in Lab space - the hot path is much simpler now!
-        let l = lhs.lightness * (T::one() - t) + rhs.lightness * t;
-        let a = lhs.a_axis * (T::one() - t) + rhs.a_axis * t;
-        let b = lhs.b_axis * (T::one() - t) + rhs.b_axis * t;
+        let l = lhs.lightness() * (T::one() - t) + rhs.lightness() * t;
+        let a = lhs.a_axis() * (T::one() - t) + rhs.a_axis() * t;
+        let b = lhs.b_axis() * (T::one() - t) + rhs.b_axis() * t;
 
         // Create result directly in Lab space
         Self {

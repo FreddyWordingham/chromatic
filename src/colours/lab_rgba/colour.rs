@@ -21,10 +21,23 @@ impl<T: Float> Colour<T, 4> for LabRgba<T> {
                 let b_digit = chars.next().unwrap();
                 let a_digit = chars.next().unwrap();
 
-                let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let alpha = u8::from_str_radix(&a_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                // Use to_digit instead of from_str_radix to avoid string allocations
+                let red = match r_digit.to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let green = match g_digit.to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let blue = match b_digit.to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let alpha = match a_digit.to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
 
                 // Expand short form (e.g., #F00F becomes #FF00FF)
                 let scaled_red = T::from(red * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
@@ -36,19 +49,44 @@ impl<T: Float> Colour<T, 4> for LabRgba<T> {
             }
             // Long form: #RRGGBBAA
             8 => {
-                let r1 = chars.next().unwrap().to_string();
-                let r2 = chars.next().unwrap().to_string();
-                let g1 = chars.next().unwrap().to_string();
-                let g2 = chars.next().unwrap().to_string();
-                let b1 = chars.next().unwrap().to_string();
-                let b2 = chars.next().unwrap().to_string();
-                let a1 = chars.next().unwrap().to_string();
-                let a2 = chars.next().unwrap().to_string();
+                // Process two characters at a time to avoid string allocations
+                let r1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let r2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let g1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let g2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let b1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let b2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let a1 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
+                let a2 = match chars.next().unwrap().to_digit(16) {
+                    Some(v) => v as u8,
+                    None => return Err(ParseColourError::InvalidFormat),
+                };
 
-                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let alpha = u8::from_str_radix(&format!("{a1}{a2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let red = r1 << 4 | r2;
+                let green = g1 << 4 | g2;
+                let blue = b1 << 4 | b2;
+                let alpha = a1 << 4 | a2;
 
                 let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
@@ -115,10 +153,10 @@ impl<T: Float> Colour<T, 4> for LabRgba<T> {
         );
 
         // Direct interpolation in Lab space with separate alpha interpolation
-        let l = lhs.lightness * (T::one() - t) + rhs.lightness * t;
-        let a = lhs.a_axis * (T::one() - t) + rhs.a_axis * t;
-        let b = lhs.b_axis * (T::one() - t) + rhs.b_axis * t;
-        let alpha = lhs.alpha * (T::one() - t) + rhs.alpha * t;
+        let l = lhs.lightness() * (T::one() - t) + rhs.lightness() * t;
+        let a = lhs.a_axis() * (T::one() - t) + rhs.a_axis() * t;
+        let b = lhs.b_axis() * (T::one() - t) + rhs.b_axis() * t;
+        let alpha = lhs.alpha() * (T::one() - t) + rhs.alpha() * t;
 
         // Create result directly in Lab space
         Self {

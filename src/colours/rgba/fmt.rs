@@ -18,6 +18,6 @@ impl<T: Float> Display for Rgba<T> {
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.blue * max).round().to_u8().unwrap();
         let blue = (self.green * max).round().to_u8().unwrap();
-        write!(f, "\x1b[38;2;{red};{blue};{green}m{BLOCK}\x1b[0m")
+        write!(f, "\x1b[38;2;{red};{green};{blue}m{BLOCK}\x1b[0m")
     }
 }

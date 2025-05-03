@@ -5,6 +5,11 @@
 use num_traits::Float;
 
 /// Convert XYZ to Lab colour space.
+///
+/// Lab uses standard CIELAB ranges:
+/// - L* is in [0, 100]
+/// - a* is in [-128, 127]
+/// - b* is in [-128, 127]
 #[expect(
     clippy::many_single_char_names,
     reason = "The variables `xyz` and `lab` are idiomatic for colour spaces."
@@ -31,7 +36,12 @@ pub fn xyz_to_lab<T: Float>(xyz: &[T; 3]) -> [T; 3] {
     let a = T::from(500.0).unwrap() * (x - y);
     let b = T::from(200.0).unwrap() * (y - z);
 
-    [l, a, b]
+    // Standard Lab ranges: L* [0,100], a* [-128,127], b* [-128,127]
+    // Ensure a* and b* values stay within standard bounds
+    let a_clamped = a.max(T::from(-128).unwrap()).min(T::from(127).unwrap());
+    let b_clamped = b.max(T::from(-128).unwrap()).min(T::from(127).unwrap());
+
+    [l, a_clamped, b_clamped]
 }
 
 /// Helper function for Lab conversion.
@@ -53,6 +63,11 @@ pub fn lab_f<T: Float>(t: T) -> T {
 }
 
 /// Convert Lab to XYZ colour space.
+///
+/// Expects Lab in standard CIELAB ranges:
+/// - L* in [0, 100]
+/// - a* in [-128, 127]
+/// - b* in [-128, 127]
 #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
 #[inline]
 pub fn lab_to_xyz<T: Float>(lab: &[T; 3]) -> [T; 3] {
@@ -125,12 +140,12 @@ pub fn xyz_to_rgb_components<T: Float>(xyz: &[T; 3]) -> [T; 3] {
     let green_gamma = linear_to_gamma(green);
     let blue_gamma = linear_to_gamma(blue);
 
-    // // Clamp values to [0, 1] range
-    // let red_clamped = red_gamma.max(T::zero()).min(T::one());
-    // let green_clamped = green_gamma.max(T::zero()).min(T::one());
-    // let blue_clamped = blue_gamma.max(T::zero()).min(T::one());
+    // Clamp values to [0, 1] range
+    let red_clamped = red_gamma.max(T::zero()).min(T::one());
+    let green_clamped = green_gamma.max(T::zero()).min(T::one());
+    let blue_clamped = blue_gamma.max(T::zero()).min(T::one());
 
-    [red_gamma, green_gamma, blue_gamma]
+    [red_clamped, green_clamped, blue_clamped]
 }
 
 /// Convert gamma-corrected RGB to linear RGB.

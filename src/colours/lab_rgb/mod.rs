@@ -10,14 +10,19 @@ mod eq;
 mod fmt;
 
 /// RGB colour representation using Lab colour space internally.
+///
+/// This uses the standard CIELAB color space where:
+/// - L* ranges from 0 to 100 (lightness)
+/// - a* ranges from -128 to +127 (green to red)
+/// - b* ranges from -128 to +127 (blue to yellow)
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct LabRgb<T: Float> {
-    /// Lightness component (L*).
+    /// Lightness component (L*) in range [0, 100].
     lightness: T,
-    /// A-axis component (a*).
+    /// A-axis component (a*) in range [-128, 127].
     a_axis: T,
-    /// B-axis component (b*).
+    /// B-axis component (b*) in range [-128, 127].
     b_axis: T,
 }
 
@@ -25,8 +30,16 @@ impl<T: Float> LabRgb<T> {
     /// Convert Lab components to RGB
     #[inline]
     fn rgb_components(&self) -> [T; 3] {
-        let lab = [self.lightness, self.a_axis, self.b_axis];
-        let xyz = lab_to_xyz(&lab);
+        // Normalize Lab values to the expected ranges for conversion functions
+        let normalized_lab = [
+            // lightness is already in correct range [0, 100]
+            self.lightness,
+            // a_axis and b_axis need to be in their proper ranges
+            self.a_axis,
+            self.b_axis,
+        ];
+
+        let xyz = lab_to_xyz(&normalized_lab);
         xyz_to_rgb_components(&xyz)
     }
 }
@@ -36,20 +49,21 @@ impl<T: Float> LabRgb<T> {
     ///
     /// # Panics
     ///
-    /// Panics if any component is not in [0, 1].
+    /// Panics if `lightness` is not in [0, 100], `a_axis` not in [-128, 127], or `b_axis` not in [-128, 127].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     pub fn new(lightness: T, a_axis: T, b_axis: T) -> Self {
         assert!(
-            lightness >= T::zero() && lightness <= T::one(),
-            "Lightness component must be between 0 and 1."
+            lightness >= T::zero() && lightness <= T::from(100).unwrap(),
+            "Lightness component must be between 0 and 100."
         );
         assert!(
-            a_axis >= T::zero() && a_axis <= T::one(),
-            "A-axis component must be between 0 and 1."
+            a_axis >= T::from(-128).unwrap() && a_axis <= T::from(127).unwrap(),
+            "A-axis component must be between -128 and 127."
         );
         assert!(
-            b_axis >= T::zero() && b_axis <= T::one(),
-            "B-axis component must be between 0 and 1."
+            b_axis >= T::from(-128).unwrap() && b_axis <= T::from(127).unwrap(),
+            "B-axis component must be between -128 and 127."
         );
         Self {
             lightness,
@@ -58,11 +72,11 @@ impl<T: Float> LabRgb<T> {
         }
     }
 
-    /// Create a new `LabRgb` instance.
+    /// Create a new `LabRgb` instance from RGB components.
     ///
     /// # Panics
     ///
-    /// Panics if any component is not in [0, 1].
+    /// Panics if any RGB component is not in [0, 1].
     #[inline]
     pub fn from_rgb(red: T, green: T, blue: T) -> Self {
         assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
@@ -184,5 +198,68 @@ impl<T: Float> LabRgb<T> {
         self.lightness = lab[0];
         self.a_axis = lab[1];
         self.b_axis = lab[2];
+    }
+
+    /// Get the lightness (L*) component.
+    #[inline]
+    pub const fn lightness(&self) -> T {
+        self.lightness
+    }
+
+    /// Get the a* component.
+    #[inline]
+    pub const fn a_axis(&self) -> T {
+        self.a_axis
+    }
+
+    /// Get the b* component.
+    #[inline]
+    pub const fn b_axis(&self) -> T {
+        self.b_axis
+    }
+
+    /// Set the lightness (L*) component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [0, 100].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_lightness(&mut self, lightness: T) {
+        assert!(
+            lightness >= T::zero() && lightness <= T::from(100).unwrap(),
+            "Lightness component must be between 0 and 100."
+        );
+        self.lightness = lightness;
+    }
+
+    /// Set the a* component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [-128, 127].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_a_axis(&mut self, a_axis: T) {
+        assert!(
+            a_axis >= T::from(-128).unwrap() && a_axis <= T::from(127).unwrap(),
+            "A-axis component must be between -128 and 127."
+        );
+        self.a_axis = a_axis;
+    }
+
+    /// Set the b* component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [-128, 127].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_b_axis(&mut self, b_axis: T) {
+        assert!(
+            b_axis >= T::from(-128).unwrap() && b_axis <= T::from(127).unwrap(),
+            "B-axis component must be between -128 and 127."
+        );
+        self.b_axis = b_axis;
     }
 }

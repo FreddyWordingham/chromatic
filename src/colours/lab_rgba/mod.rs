@@ -10,25 +10,39 @@ mod eq;
 mod fmt;
 
 /// RGB colour representation with transparency using Lab colour space internally.
+///
+/// This uses the standard CIELAB color space where:
+/// - L* ranges from 0 to 100 (lightness)
+/// - a* ranges from -128 to +127 (green to red)
+/// - b* ranges from -128 to +127 (blue to yellow)
+/// - alpha ranges from 0 to 1 (transparency)
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct LabRgba<T: Float> {
-    /// Lightness component (L*).
+    /// Lightness component (L*) in range [0, 100].
     lightness: T,
-    /// A-axis component (a*).
+    /// A-axis component (a*) in range [-128, 127].
     a_axis: T,
-    /// B-axis component (b*).
+    /// B-axis component (b*) in range [-128, 127].
     b_axis: T,
-    /// Alpha (transparency) component.
+    /// Alpha (transparency) component in range [0, 1].
     alpha: T,
 }
 
 impl<T: Float> LabRgba<T> {
-    /// Convert Lab components and alpha to RGBA components.
+    /// Convert Lab components and alpha to RGB components.
     #[inline]
     fn rgb_components(&self) -> [T; 3] {
-        let lab = [self.lightness, self.a_axis, self.b_axis];
-        let xyz = lab_to_xyz(&lab);
+        // Normalize Lab values to the expected ranges for conversion functions
+        let normalized_lab = [
+            // lightness is already in correct range [0, 100]
+            self.lightness,
+            // a_axis and b_axis need to be in their proper ranges
+            self.a_axis,
+            self.b_axis,
+        ];
+
+        let xyz = lab_to_xyz(&normalized_lab);
         let rgb = xyz_to_rgb_components(&xyz);
         [rgb[0], rgb[1], rgb[2]]
     }
@@ -39,20 +53,22 @@ impl<T: Float> LabRgba<T> {
     ///
     /// # Panics
     ///
-    /// Panics if any component is not in [0, 1].
+    /// Panics if lightness is not in [0, 100], a_axis not in [-128, 127], b_axis not in [-128, 127],
+    /// or alpha not in [0, 1].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     pub fn new(lightness: T, a_axis: T, b_axis: T, alpha: T) -> Self {
         assert!(
-            lightness >= T::zero() && lightness <= T::one(),
-            "Lightness component must be between 0 and 1."
+            lightness >= T::zero() && lightness <= T::from(100).unwrap(),
+            "Lightness component must be between 0 and 100."
         );
         assert!(
-            a_axis >= T::zero() && a_axis <= T::one(),
-            "A-axis component must be between 0 and 1."
+            a_axis >= T::from(-128).unwrap() && a_axis <= T::from(127).unwrap(),
+            "A-axis component must be between -128 and 127."
         );
         assert!(
-            b_axis >= T::zero() && b_axis <= T::one(),
-            "B-axis component must be between 0 and 1."
+            b_axis >= T::from(-128).unwrap() && b_axis <= T::from(127).unwrap(),
+            "B-axis component must be between -128 and 127."
         );
         assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -66,11 +82,11 @@ impl<T: Float> LabRgba<T> {
         }
     }
 
-    /// Create a new `LabRgba` instance.
+    /// Create a new `LabRgba` instance from RGBA components.
     ///
     /// # Panics
     ///
-    /// Panics if any component is not in [0, 1].
+    /// Panics if any RGB component is not in [0, 1].
     #[inline]
     pub fn from_rgba(red: T, green: T, blue: T, alpha: T) -> Self {
         assert!(!(red < T::zero() || red > T::one()), "Red component must be between 0 and 1.");
@@ -125,6 +141,24 @@ impl<T: Float> LabRgba<T> {
     #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
+    }
+
+    /// Get the lightness (L*) component.
+    #[inline]
+    pub const fn lightness(&self) -> T {
+        self.lightness
+    }
+
+    /// Get the a* component.
+    #[inline]
+    pub const fn a_axis(&self) -> T {
+        self.a_axis
+    }
+
+    /// Get the b* component.
+    #[inline]
+    pub const fn b_axis(&self) -> T {
+        self.b_axis
     }
 
     /// Set the red component.
@@ -217,5 +251,50 @@ impl<T: Float> LabRgba<T> {
             "Alpha component must be between 0 and 1."
         );
         self.alpha = alpha;
+    }
+
+    /// Set the lightness (L*) component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [0, 100].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_lightness(&mut self, lightness: T) {
+        assert!(
+            lightness >= T::zero() && lightness <= T::from(100).unwrap(),
+            "Lightness component must be between 0 and 100."
+        );
+        self.lightness = lightness;
+    }
+
+    /// Set the a* component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [-128, 127].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_a_axis(&mut self, a_axis: T) {
+        assert!(
+            a_axis >= T::from(-128).unwrap() && a_axis <= T::from(127).unwrap(),
+            "A-axis component must be between -128 and 127."
+        );
+        self.a_axis = a_axis;
+    }
+
+    /// Set the b* component.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is not in [-128, 127].
+    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
+    #[inline]
+    pub fn set_b_axis(&mut self, b_axis: T) {
+        assert!(
+            b_axis >= T::from(-128).unwrap() && b_axis <= T::from(127).unwrap(),
+            "B-axis component must be between -128 and 127."
+        );
+        self.b_axis = b_axis;
     }
 }

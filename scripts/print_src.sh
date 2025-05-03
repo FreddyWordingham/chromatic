@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 # Recursively print all files in ./src with fenced code blocks
 
-shopt -s globstar nullglob
-
-for file in ./src/**/*; do
-  if [[ -f "$file" ]]; then
-    printf '%s\n' "$file"
-    printf '```rust\n'
-    cat "$file"
-    printf '\n```\n\n'
-  fi
+find ./src -type f -name '*.rs' | sort | while read -r file; do
+  echo "$file"
+  echo '```rust'
+  cat "$file"
+  echo '```'
+  echo
 done
