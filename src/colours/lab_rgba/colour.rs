@@ -6,6 +6,7 @@ use num_traits::Float;
 use crate::{Colour, LabRgba, ParseColourError};
 
 impl<T: Float> Colour<T, 4> for LabRgba<T> {
+    #[expect(clippy::min_ident_chars, reason = "Variable `v` for value is idiomatic.")]
     #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
@@ -23,19 +24,19 @@ impl<T: Float> Colour<T, 4> for LabRgba<T> {
 
                 // Use to_digit instead of from_str_radix to avoid string allocations
                 let red = match r_digit.to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let green = match g_digit.to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let blue = match b_digit.to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let alpha = match a_digit.to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
 
@@ -51,42 +52,42 @@ impl<T: Float> Colour<T, 4> for LabRgba<T> {
             8 => {
                 // Process two characters at a time to avoid string allocations
                 let r1 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let r2 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let g1 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let g2 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let b1 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let b2 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let a1 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
                 let a2 = match chars.next().unwrap().to_digit(16) {
-                    Some(v) => v as u8,
+                    Some(v) => u8::try_from(v).unwrap(),
                     None => return Err(ParseColourError::InvalidFormat),
                 };
 
-                let red = r1 << 4 | r2;
-                let green = g1 << 4 | g2;
-                let blue = b1 << 4 | b2;
-                let alpha = a1 << 4 | a2;
+                let red = (r1 << 4) | r2;
+                let green = (g1 << 4) | g2;
+                let blue = (b1 << 4) | b2;
+                let alpha = (a1 << 4) | a2;
 
                 let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
                 let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();

@@ -53,8 +53,7 @@ impl<T: Float> LabRgba<T> {
     ///
     /// # Panics
     ///
-    /// Panics if lightness is not in [0, 100], a_axis not in [-128, 127], b_axis not in [-128, 127],
-    /// or alpha not in [0, 1].
+    /// Panics if `lightness` is not in [0, 100], `a_axis` not in [-128, 127], `b_axis` not in [-128, 127], or `alpha` not in [0, 1].
     #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     pub fn new(lightness: T, a_axis: T, b_axis: T, alpha: T) -> Self {
