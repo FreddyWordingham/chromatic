@@ -8,7 +8,6 @@ A comprehensive Rust library with a straightforward API for working with multipl
 
 ## Features
 
-- **No Standard Library**: Works in `#![no_std]` environments
 - **Extensive colour space support**: RGB, sRGB, HSL, HSV, Lab, XYZ, and greyscale
 - **Alpha channel variants**: All colour spaces have alpha channel counterparts (e.g., RGBA, HSLA)
 - **Generic type representation**: Use any floating-point type as the underlying representation (f32, f64, etc.)

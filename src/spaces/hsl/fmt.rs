@@ -1,7 +1,7 @@
 //! Print `Hsl` to the terminal.
 
-use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{Convert, Hsl, config::PRINT_BLOCK};
 

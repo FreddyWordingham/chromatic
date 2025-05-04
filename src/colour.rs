@@ -1,7 +1,7 @@
 //! Trait implemented by all colour types.
 
-use core::{num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
+use std::{num::ParseIntError, ops::AddAssign};
 
 use crate::ParseColourError;
 

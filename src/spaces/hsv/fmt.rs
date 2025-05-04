@@ -1,7 +1,7 @@
 //! Print `Hsv` to the terminal.
 
-use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{Convert, Hsv, config::PRINT_BLOCK};
 

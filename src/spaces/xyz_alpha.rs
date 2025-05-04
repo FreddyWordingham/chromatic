@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-use core::{
+use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     num::ParseIntError,
 };

@@ -1,7 +1,7 @@
 //! Implements the `Colour` trait for `Lab`.
 
-use core::num::ParseIntError;
 use num_traits::Float;
+use std::num::ParseIntError;
 
 use crate::{Colour, Convert, Lab, ParseColourError, Srgb};
 

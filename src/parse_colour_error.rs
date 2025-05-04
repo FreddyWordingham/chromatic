@@ -1,6 +1,6 @@
 //! Error types for parsing colours.
 
-use core::num::ParseIntError;
+use std::num::ParseIntError;
 
 /// Error parsing `Colour`s from string.
 #[derive(Debug)]

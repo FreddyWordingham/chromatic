@@ -1,7 +1,7 @@
 //! Print a `ColourMap` to the terminal.
 
-use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use terminal_size::{Width, terminal_size};
 
 use crate::{Colour, ColourMap};

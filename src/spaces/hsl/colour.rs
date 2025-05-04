@@ -1,7 +1,7 @@
 //! Implements the `Colour` trait for `Hsl`.
 
-use core::num::ParseIntError;
 use num_traits::Float;
+use std::num::ParseIntError;
 
 use crate::{Colour, Convert, Hsl, ParseColourError, Rgb};
 

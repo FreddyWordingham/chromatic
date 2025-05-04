@@ -1,7 +1,7 @@
 //! Print `Lab` to the terminal.
 
-use core::fmt::{Display, Formatter, Result as FmtResult};
 use num_traits::Float;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{Convert, Lab, config::PRINT_BLOCK};
 

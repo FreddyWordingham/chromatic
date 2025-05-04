@@ -1,7 +1,7 @@
 //! Implements the `Colour` trait for `Grey`.
 
-use core::num::ParseIntError;
 use num_traits::Float;
+use std::num::ParseIntError;
 
 use crate::{Colour, Grey, ParseColourError};
 
