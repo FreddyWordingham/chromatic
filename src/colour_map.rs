@@ -37,24 +37,26 @@ where
     #[must_use]
     #[inline]
     pub fn new(colours: &[C], positions: &[T]) -> Self {
-        assert!(!colours.is_empty(), "Colour map must have at least one colour.");
-        assert_eq!(
+        debug_assert!(!colours.is_empty(), "Colour map must have at least one colour.");
+        debug_assert_eq!(
             colours.len(),
             positions.len(),
             "Colour map must have the same number of colours and positions."
         );
 
-        // Validate positions are in range [0, 1] and ascending
-        for position in positions {
-            assert!(
-                *position >= T::zero() && *position <= T::one(),
-                "Positions must be in range [0, 1]."
-            );
-        }
+        // Validate positions are in range [0, 1] using all()
+        debug_assert!(
+            positions
+                .iter()
+                .all(|position| *position >= T::zero() && *position <= T::one()),
+            "Positions must be in range [0, 1]."
+        );
 
-        for i in 1..positions.len() {
-            assert!(positions[i] > positions[i - 1], "Positions must be in ascending order.");
-        }
+        // Check positions are in ascending order using windows() and all()
+        debug_assert!(
+            positions.windows(2).all(|window| window[1] > window[0]),
+            "Positions must be in ascending order."
+        );
 
         Self {
             colours: colours.to_vec(),
@@ -71,7 +73,7 @@ where
     #[must_use]
     #[inline]
     pub fn new_uniform(colours: &[C]) -> Self {
-        assert!(!colours.is_empty(), "Colour map must have at least one colour.");
+        debug_assert!(!colours.is_empty(), "Colour map must have at least one colour.");
         if colours.len() == 1 {
             return Self::new(colours, &[T::zero()]);
         }
@@ -90,7 +92,7 @@ where
     #[must_use]
     #[inline]
     pub fn sample(&self, position: T) -> C {
-        assert!(
+        debug_assert!(
             position >= T::zero() && position <= T::one(),
             "Sample position must be in range [0, 1]."
         );
