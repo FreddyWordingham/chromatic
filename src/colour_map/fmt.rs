@@ -13,16 +13,16 @@ where
 {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        if let Some((Width(mut width), _)) = terminal_size() {
-            width = width.max(1);
-            for i in 0..width {
-                let t = T::from(i).unwrap() / T::from((width - 1).max(1)).unwrap();
-                let colour = self.sample(t);
-                write!(f, "{colour}")?;
-            }
-            Ok(())
+        let width = if let Some((Width(width), _)) = terminal_size() {
+            width
         } else {
-            write!(f, "cmap")
+            60
+        };
+        for i in 0..width {
+            let t = T::from(i).unwrap() / T::from((width - 1).max(1)).unwrap();
+            let colour = self.sample(t);
+            write!(f, "{colour}")?;
         }
+        Ok(())
     }
 }
