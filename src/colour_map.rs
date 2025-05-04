@@ -13,7 +13,7 @@ use crate::Colour;
 pub struct ColourMap<C, T, const N: usize>
 where
     C: Colour<T, N>,
-    T: Float,
+    T: Float + Send + Sync,
 {
     /// The colours in the map.
     colours: Vec<C>,
@@ -24,7 +24,7 @@ where
 impl<C, T, const N: usize> ColourMap<C, T, N>
 where
     C: Clone + Colour<T, N>,
-    T: Float,
+    T: Float + Send + Sync,
 {
     /// Create a new colour map from a list of colours and positions.
     ///
@@ -152,7 +152,7 @@ where
 impl<C, T, const N: usize> Display for ColourMap<C, T, N>
 where
     C: Display + Clone + Colour<T, N>,
-    T: Float,
+    T: Float + Send + Sync,
 {
     #[expect(
         clippy::min_ident_chars,

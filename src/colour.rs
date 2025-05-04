@@ -1,6 +1,4 @@
-//! ## `Colour` Module
-//!
-//! This module provides the `Colour` trait, which is implemented by all colour types.
+//! Trait implemented by all colour types.
 
 use core::{num::ParseIntError, ops::AddAssign};
 use num_traits::Float;
@@ -8,7 +6,7 @@ use num_traits::Float;
 use crate::ParseColourError;
 
 /// Common trait for all colour types.
-pub trait Colour<T: Float, const N: usize> {
+pub trait Colour<T: Float + Send + Sync, const N: usize> {
     /// Number of components in the colour.
     const NUM_COMPONENTS: usize = N;
 
@@ -23,7 +21,7 @@ pub trait Colour<T: Float, const N: usize> {
 
     /// Convert the colour to a hex string.
     #[must_use]
-    fn to_hex(self) -> String;
+    fn to_hex(&self) -> String;
 
     /// Create a new colour from a byte array.
     #[must_use]
@@ -33,15 +31,7 @@ pub trait Colour<T: Float, const N: usize> {
     #[must_use]
     fn to_bytes(self) -> [u8; N];
 
-    /// Get the tolerance for comparing component values.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
-    #[inline]
-    fn tolerance() -> T {
-        T::one() / T::from(256_i32).unwrap()
-    }
-
-    /// Linear interpolate between two greyalphas.
+    /// Linear interpolate between two colours of the same type.
     #[must_use]
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self;
 
@@ -52,10 +42,6 @@ pub trait Colour<T: Float, const N: usize> {
     /// Panics if the list of colours is empty.
     /// Panics if the lengths of colours and weights do not match.
     /// Panics if any weight is negative.
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "The variable `t` for an interpolation factor is idiomatic."
-    )]
     #[must_use]
     #[inline]
     fn mix(colours: &[Self], weights: &[T]) -> Self
@@ -63,9 +49,9 @@ pub trait Colour<T: Float, const N: usize> {
         Self: Clone,
         T: AddAssign,
     {
-        assert!(!colours.is_empty(), "Cannot mix an empty list of colours.");
-        assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");
-        assert!(weights.iter().all(|&w| w >= T::zero()), "Weights must be non-negative.");
+        debug_assert!(!colours.is_empty(), "Cannot mix an empty list of colours.");
+        debug_assert_eq!(colours.len(), weights.len(), "Colours and weights must have the same length.");
+        debug_assert!(weights.iter().all(|&w| w >= T::zero()), "Weights must be non-negative.");
 
         // Handle the single colour case
         if colours.len() == 1 {
