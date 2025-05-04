@@ -19,20 +19,19 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
 
     #[inline]
     fn to_hsv(&self) -> Hsv<T> {
-        // Conversion from HSL to HSV
-        let v = if self.lightness + self.saturation * (T::one() - (T::from(2.0).unwrap() * self.lightness - T::one()).abs())
-            < T::zero()
-        {
-            T::zero() // Clamp to valid range
-        } else {
-            self.lightness + self.saturation * (T::one() - (T::from(2.0).unwrap() * self.lightness - T::one()).abs())
-        };
+        // v = L + S_l * min(L, 1-L)
+        let delta =
+            self.saturation * (T::one() - (T::from(2.0).unwrap() * self.lightness - T::one()).abs()) / T::from(2.0).unwrap();
+        let mut v = self.lightness + delta;
+        // clamp v to [0,1]
+        if v < T::zero() {
+            v = T::zero();
+        } else if v > T::one() {
+            v = T::one();
+        }
 
-        let s = if v.abs() < T::epsilon() {
-            T::zero() // Avoid division by zero
-        } else {
-            T::from(2.0).unwrap() * (T::one() - self.lightness / v)
-        };
+        // s_v = delta / v (or 0 when v≈0)
+        let s = if v.abs() <= T::epsilon() { T::zero() } else { delta / v };
 
         Hsv::new(self.hue, s, v)
     }
