@@ -45,55 +45,55 @@ impl<T: Float + Send + Sync> HslAlpha<T> {
         Self { colour, alpha }
     }
 
-    /// Get the base colour.
+    /// Get the base `colour`.
     #[inline]
     const fn colour(&self) -> &Hsl<T> {
         &self.colour
     }
 
-    /// Get the hue component.
+    /// Get the `hue` component.
     #[inline]
     pub const fn hue(&self) -> T {
         self.colour.hue()
     }
 
-    /// Get the saturation component.
+    /// Get the `saturation` component.
     #[inline]
     pub const fn saturation(&self) -> T {
         self.colour.saturation()
     }
 
-    /// Get the lightness component.
+    /// Get the `lightness` component.
     #[inline]
     pub const fn lightness(&self) -> T {
         self.colour.lightness()
     }
 
-    /// Get the alpha component.
+    /// Get the `alpha` component.
     #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
-    /// Set the hue component.
+    /// Set the `hue` component.
     #[inline]
     pub fn set_hue(&mut self, hue: T) {
         self.colour.set_hue(hue);
     }
 
-    /// Set the saturation component.
+    /// Set the `saturation` component.
     #[inline]
     pub fn set_saturation(&mut self, saturation: T) {
         self.colour.set_saturation(saturation);
     }
 
-    /// Set the lightness component.
+    /// Set the `lightness` component.
     #[inline]
     pub fn set_lightness(&mut self, lightness: T) {
         self.colour.set_lightness(lightness);
     }
 
-    /// Set the alpha component.
+    /// Set the `alpha` component.
     #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(

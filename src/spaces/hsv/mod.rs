@@ -48,25 +48,25 @@ impl<T: Float + Send + Sync> Hsv<T> {
         Self { hue, saturation, value }
     }
 
-    /// Get the hue component in degrees [0, 360).
+    /// Get the `hue` component in degrees [0, 360).
     #[inline]
     pub const fn hue(&self) -> T {
         self.hue
     }
 
-    /// Get the saturation component.
+    /// Get the `saturation` component.
     #[inline]
     pub const fn saturation(&self) -> T {
         self.saturation
     }
 
-    /// Get the value component.
+    /// Get the `value` component.
     #[inline]
     pub const fn value(&self) -> T {
         self.value
     }
 
-    /// Set the hue component in degrees [0, 360).
+    /// Set the `hue` component in degrees [0, 360).
     #[inline]
     pub fn set_hue(&mut self, mut hue: T) {
         // Normalize hue to be within [0, 360)
@@ -85,7 +85,7 @@ impl<T: Float + Send + Sync> Hsv<T> {
         self.hue = hue;
     }
 
-    /// Set the saturation component.
+    /// Set the `saturation` component.
     #[inline]
     pub fn set_saturation(&mut self, saturation: T) {
         debug_assert!(
@@ -95,7 +95,7 @@ impl<T: Float + Send + Sync> Hsv<T> {
         self.saturation = saturation;
     }
 
-    /// Set the value component.
+    /// Set the `value` component.
     #[inline]
     pub fn set_value(&mut self, value: T) {
         debug_assert!(

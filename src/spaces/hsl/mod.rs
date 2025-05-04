@@ -52,25 +52,25 @@ impl<T: Float + Send + Sync> Hsl<T> {
         }
     }
 
-    /// Get the hue component in degrees [0, 360).
+    /// Get the `hue` component in degrees [0, 360).
     #[inline]
     pub const fn hue(&self) -> T {
         self.hue
     }
 
-    /// Get the saturation component.
+    /// Get the `saturation` component.
     #[inline]
     pub const fn saturation(&self) -> T {
         self.saturation
     }
 
-    /// Get the lightness component.
+    /// Get the `lightness` component.
     #[inline]
     pub const fn lightness(&self) -> T {
         self.lightness
     }
 
-    /// Set the hue component in degrees [0, 360).
+    /// Set the `hue` component in degrees [0, 360).
     #[inline]
     pub fn set_hue(&mut self, mut hue: T) {
         // Normalize hue to be within [0, 360)
@@ -89,7 +89,7 @@ impl<T: Float + Send + Sync> Hsl<T> {
         self.hue = hue;
     }
 
-    /// Set the saturation component.
+    /// Set the `saturation` component.
     #[inline]
     pub fn set_saturation(&mut self, saturation: T) {
         debug_assert!(
@@ -99,7 +99,7 @@ impl<T: Float + Send + Sync> Hsl<T> {
         self.saturation = saturation;
     }
 
-    /// Set the lightness component.
+    /// Set the `lightness` component.
     #[inline]
     pub fn set_lightness(&mut self, lightness: T) {
         debug_assert!(

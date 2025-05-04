@@ -45,55 +45,55 @@ impl<T: Float + Send + Sync> XyzAlpha<T> {
         Self { colour, alpha }
     }
 
-    /// Get the base colour.
+    /// Get the base `colour`.
     #[inline]
     const fn colour(&self) -> &Xyz<T> {
         &self.colour
     }
 
-    /// Get the X component.
+    /// Get the `x` component.
     #[inline]
     pub const fn x(&self) -> T {
         self.colour.x()
     }
 
-    /// Get the Y component.
+    /// Get the `y` component.
     #[inline]
     pub const fn y(&self) -> T {
         self.colour.y()
     }
 
-    /// Get the Z component.
+    /// Get the `z` component.
     #[inline]
     pub const fn z(&self) -> T {
         self.colour.z()
     }
 
-    /// Get the alpha component.
+    /// Get the `alpha` component.
     #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
-    /// Set the X component.
+    /// Set the `x` component.
     #[inline]
     pub fn set_x(&mut self, x: T) {
         self.colour.set_x(x);
     }
 
-    /// Set the Y component.
+    /// Set the `y` component.
     #[inline]
     pub fn set_y(&mut self, y: T) {
         self.colour.set_y(y);
     }
 
-    /// Set the Z component.
+    /// Set the `z` component.
     #[inline]
     pub fn set_z(&mut self, z: T) {
         self.colour.set_z(z);
     }
 
-    /// Set the alpha component.
+    /// Set the `alpha` component.
     #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(

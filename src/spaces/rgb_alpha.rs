@@ -45,55 +45,55 @@ impl<T: Float + Send + Sync> RgbAlpha<T> {
         Self { colour, alpha }
     }
 
-    /// Get the base colour.
+    /// Get the base `colour`.
     #[inline]
     const fn colour(&self) -> &Rgb<T> {
         &self.colour
     }
 
-    /// Get the red component.
+    /// Get the `red` component.
     #[inline]
     pub const fn red(&self) -> T {
         self.colour.red()
     }
 
-    /// Get the green component.
+    /// Get the `green` component.
     #[inline]
     pub const fn green(&self) -> T {
         self.colour.green()
     }
 
-    /// Get the blue component.
+    /// Get the `blue` component.
     #[inline]
     pub const fn blue(&self) -> T {
         self.colour.blue()
     }
 
-    /// Get the alpha component.
+    /// Get the `alpha` component.
     #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
-    /// Set the red component.
+    /// Set the `red` component.
     #[inline]
     pub fn set_red(&mut self, red: T) {
         self.colour.set_red(red);
     }
 
-    /// Set the green component.
+    /// Set the `green` component.
     #[inline]
     pub fn set_green(&mut self, green: T) {
         self.colour.set_green(green);
     }
 
-    /// Set the blue component.
+    /// Set the `blue` component.
     #[inline]
     pub fn set_blue(&mut self, blue: T) {
         self.colour.set_blue(blue);
     }
 
-    /// Set the alpha component.
+    /// Set the `alpha` component.
     #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(

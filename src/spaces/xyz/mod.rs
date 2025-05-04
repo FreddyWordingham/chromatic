@@ -31,39 +31,39 @@ impl<T: Float + Send + Sync> Xyz<T> {
         Self { x, y, z }
     }
 
-    /// Get the X component.
+    /// Get the `x` component.
     #[inline]
     pub const fn x(&self) -> T {
         self.x
     }
 
-    /// Get the Y component (luminance).
+    /// Get the `y` component (luminance).
     #[inline]
     pub const fn y(&self) -> T {
         self.y
     }
 
-    /// Get the Z component.
+    /// Get the `z` component.
     #[inline]
     pub const fn z(&self) -> T {
         self.z
     }
 
-    /// Set the X component.
+    /// Set the `x` component.
     #[inline]
     pub fn set_x(&mut self, x: T) {
         debug_assert!(x >= T::zero(), "X component should be non-negative.");
         self.x = x;
     }
 
-    /// Set the Y component (luminance).
+    /// Set the `y` component (luminance).
     #[inline]
     pub fn set_y(&mut self, y: T) {
         debug_assert!(y >= T::zero(), "Y component should be non-negative.");
         self.y = y;
     }
 
-    /// Set the Z component.
+    /// Set the `z` component.
     #[inline]
     pub fn set_z(&mut self, z: T) {
         debug_assert!(z >= T::zero(), "Z component should be non-negative.");

@@ -33,32 +33,32 @@ impl<T: Float + Send + Sync> Rgb<T> {
         Self { red, green, blue }
     }
 
-    /// Get the red component.
+    /// Get the `red` component.
     #[inline]
     pub const fn red(&self) -> T {
         self.red
     }
 
-    /// Get the green component.
+    /// Get the `green` component.
     #[inline]
     pub const fn green(&self) -> T {
         self.green
     }
 
-    /// Get the blue component.
+    /// Get the `blue` component.
     #[inline]
     pub const fn blue(&self) -> T {
         self.blue
     }
 
-    /// Set the red component.
+    /// Set the `red` component.
     #[inline]
     pub fn set_red(&mut self, red: T) {
         debug_assert!(red >= T::zero() && red <= T::one(), "Red component must be between 0 and 1.");
         self.red = red;
     }
 
-    /// Set the green component.
+    /// Set the `green` component.
     #[inline]
     pub fn set_green(&mut self, green: T) {
         debug_assert!(
@@ -68,7 +68,7 @@ impl<T: Float + Send + Sync> Rgb<T> {
         self.green = green;
     }
 
-    /// Set the blue component.
+    /// Set the `blue` component.
     #[inline]
     pub fn set_blue(&mut self, blue: T) {
         debug_assert!(

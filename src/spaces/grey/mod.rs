@@ -24,13 +24,13 @@ impl<T: Float + Send + Sync> Grey<T> {
         Self { grey }
     }
 
-    /// Get the grey component.
+    /// Get the `grey` component.
     #[inline]
     pub const fn grey(&self) -> T {
         self.grey
     }
 
-    /// Set the grey component.
+    /// Set the `grey` component.
     #[inline]
     pub fn set_grey(&mut self, grey: T) {
         debug_assert!(

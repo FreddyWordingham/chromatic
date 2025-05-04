@@ -45,25 +45,25 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
         Self { colour, alpha }
     }
 
-    /// Get the base colour.
+    /// Get the base `colour`.
     #[inline]
     const fn colour(&self) -> &Grey<T> {
         &self.colour
     }
 
-    /// Get the grey component.
+    /// Get the `grey` component.
     #[inline]
     pub const fn grey(&self) -> T {
         self.colour.grey()
     }
 
-    /// Get the alpha component.
+    /// Get the `alpha` component.
     #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
-    /// Set the grey component.
+    /// Set the `grey` component.
     #[inline]
     pub fn set_grey(&mut self, grey: T) {
         debug_assert!(
@@ -73,7 +73,7 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
         self.colour.set_grey(grey);
     }
 
-    /// Set the alpha component.
+    /// Set the `alpha` component.
     #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(

@@ -1,7 +1,7 @@
 //! Lab colour representation.
 //!
-//! The Lab color space (also known as CIELAB) is a color space defined by the International
-//! Commission on Illumination (CIE) in 1976. It expresses color as three values:
+//! The Lab colour space (also known as CIELAB) is a colour space defined by the International
+//! Commission on Illumination (CIE) in 1976. It expresses colour as three values:
 //! - L* for perceptual lightness (0 to 100)
 //! - a* from green (-) to red (+)
 //! - b* from blue (-) to yellow (+)
@@ -97,12 +97,12 @@ impl<T: Float + Send + Sync> Lab<T> {
         self.b_star = b_star;
     }
 
-    /// Calculate perceptual color difference in Lab space (CIE76 Delta E).
-    /// The Delta E value indicates how different two colors appear, with values:
+    /// Calculate perceptual colour difference in Lab space (CIE76 Delta E).
+    /// The Delta E value indicates how different two colours appear, with values:
     /// - < 1.0: Not perceptible by human eyes
     /// - 1-2: Perceptible through close observation
     /// - 2-10: Perceptible at a glance
-    /// - > 10: Colors are more similar than opposite
+    /// - > 10: Colours are more similar than opposite
     #[inline]
     pub fn delta_e(&self, other: &Self) -> T {
         let dl = self.lightness - other.lightness;
@@ -112,8 +112,8 @@ impl<T: Float + Send + Sync> Lab<T> {
         (dl * dl + da * da + db * db).sqrt()
     }
 
-    /// Calculate perceptual color difference using the improved CIE94 Delta E formula.
-    /// This is more accurate than the basic delta_e method, especially for saturated colors.
+    /// Calculate perceptual colour difference using the improved CIE94 Delta E formula.
+    /// This is more accurate than the basic delta_e method, especially for saturated colours.
     #[inline]
     pub fn delta_e94(&self, other: &Self) -> T {
         // Weighting factors

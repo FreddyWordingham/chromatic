@@ -1,3 +1,5 @@
 //! Colours with transparency.
 
-mod macros;
+mod colour;
+mod convert;
+mod fmt;

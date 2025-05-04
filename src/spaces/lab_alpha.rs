@@ -45,7 +45,7 @@ impl<T: Float + Send + Sync> LabAlpha<T> {
         Self { colour, alpha }
     }
 
-    /// Get the base colour.
+    /// Get the base `colour`.
     #[inline]
     const fn colour(&self) -> &Lab<T> {
         &self.colour
