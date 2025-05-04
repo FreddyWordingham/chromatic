@@ -8,14 +8,15 @@ A comprehensive Rust library with a straightforward API for working with multipl
 
 ## Features
 
+- **No Standard Library**: Works in `#![no_std]` environments
 - **Extensive colour space support**: RGB, sRGB, HSL, HSV, Lab, XYZ, and greyscale
 - **Alpha channel variants**: All colour spaces have alpha channel counterparts (e.g., RGBA, HSLA)
 - **Generic type representation**: Use any floating-point type as the underlying representation (f32, f64, etc.)
 - **Flexible colourmap creation**: Build and sample from colour gradients with any colour space
 - **Rich conversion system**: Convert between any supported colour spaces
-- **Terminal output**: Display colours directly in terminals that support 24-bit colour
+- **CLI friendly**: Display impls print ANSI-coloured blocks so you can eyeball gradients right in your terminal.
 - **Format flexibility**: Convert to/from hex strings and byte arrays
-- **Complete colour handling**: Linear interpolation, perceptual colour differences, proper gamma handling for sRGB
+- **Complete colour mixing**: Linear interpolation, perceptual colour differences, proper gamma handling for sRGB
 
 ## Installation
 
@@ -24,7 +25,6 @@ Add chromatic to your `Cargo.toml`:
 ```toml
 [dependencies]
 chromatic = "0.1.0"
-num-traits = "0.2"
 ```
 
 ## Quick Start
