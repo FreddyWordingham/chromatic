@@ -19,6 +19,7 @@
 #![allow(clippy::arithmetic_side_effects, reason = "Too restrictive for this crate.")]
 #![allow(clippy::blanket_clippy_restriction_lints, reason = "Prefer more lints.")]
 #![allow(clippy::default_numeric_fallback, reason = "Numeric type fallback should not be required.")]
+#![allow(clippy::else_if_without_else, reason = "Eliding final else is idiomatic in Rust.")]
 #![allow(clippy::float_arithmetic, reason = "Too restrictive for this crate.")]
 #![allow(clippy::implicit_return, reason = "Implicit returns are idiomatic in Rust.")]
 #![allow(clippy::indexing_slicing, reason = "Too restrictive for this crate.")]
@@ -41,14 +42,13 @@
     clippy::separated_literal_suffix,
     reason = "Must chose between separated and unseparated literal suffixes."
 )]
-#![allow(clippy::unwrap_in_result, reason = "In some cases unwrap can be guaranteed to succeed.")]
-#![allow(clippy::unwrap_used, reason = "In some cases unwrap can be guaranteed to succeed.")]
 #![allow(clippy::std_instead_of_core, reason = "Prefer std for consistency.")]
 #![allow(
     clippy::unreadable_literal,
     reason = "Prefer no underscores in numeric literals for consistency."
 )]
-#![allow(clippy::else_if_without_else, reason = "Eliding final else is idiomatic in Rust.")]
+#![allow(clippy::unwrap_in_result, reason = "In some cases unwrap can be guaranteed to succeed.")]
+#![allow(clippy::unwrap_used, reason = "In some cases unwrap can be guaranteed to succeed.")]
 
 mod colour;
 mod colour_map;
