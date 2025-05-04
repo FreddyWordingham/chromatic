@@ -27,13 +27,6 @@ where
     T: Float + Send + Sync,
 {
     /// Create a new colour map from a list of colours and positions.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the lists are empty.
-    /// Panics if the lists have different lengths.
-    /// Panics if the positions are not in ascending order.
-    /// Panics if any position is outside the range [0, 1].
     #[must_use]
     #[inline]
     pub fn new(colours: &[C], positions: &[T]) -> Self {
@@ -65,11 +58,6 @@ where
     }
 
     /// Create a new colour map with uniformly spaced positions.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the list of colours is empty.
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[must_use]
     #[inline]
     pub fn new_uniform(colours: &[C]) -> Self {
@@ -84,52 +72,31 @@ where
     }
 
     /// Sample the colour map at a given position.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the position is outside the range [0, 1].
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
-    #[must_use]
     #[inline]
     pub fn sample(&self, position: T) -> C {
-        debug_assert!(
-            position >= T::zero() && position <= T::one(),
-            "Sample position must be in range [0, 1]."
-        );
+        debug_assert!((T::zero()..=T::one()).contains(&position));
 
-        // Handle edge cases
+        // fast-edge
         if position <= self.positions[0] {
             return self.colours[0].clone();
         }
-
         if position >= *self.positions.last().unwrap() {
             return self.colours.last().unwrap().clone();
         }
 
-        // Find the segment containing the position
-        let mut segment_index = 0;
-        for i in 1..self.positions.len() {
-            if position <= self.positions[i] {
-                segment_index = i - 1;
-                break;
-            }
-        }
+        // find first i where positions[i] > position
+        let hi = self
+            .positions
+            .binary_search_by(|p| p.partial_cmp(&position).unwrap())
+            .unwrap_or_else(|i| i);
+        let lo = hi - 1;
 
-        // Calculate interpolation factor within segment
-        let segment_start = self.positions[segment_index];
-        let segment_end = self.positions[segment_index + 1];
-        let segment_t = (position - segment_start) / (segment_end - segment_start);
-
-        // Use the Colour trait's lerp method for interpolation
-        C::lerp(&self.colours[segment_index], &self.colours[segment_index + 1], segment_t)
+        let (start, end) = (self.positions[lo], self.positions[hi]);
+        let t = (position - start) / (end - start);
+        C::lerp(&self.colours[lo], &self.colours[hi], t)
     }
 
     /// Get the number of control points in the `ColourMap`.
-    #[expect(clippy::len_without_is_empty, reason = "A colour map can never be empty.")]
-    #[expect(
-        clippy::missing_const_for_fn,
-        reason = "`Vec::<T, A>::len` is not yet stable as a const fn."
-    )]
     #[must_use]
     #[inline]
     pub fn len(&self) -> usize {
@@ -156,12 +123,6 @@ where
     C: Display + Clone + Colour<T, N>,
     T: Float + Send + Sync,
 {
-    #[expect(
-        clippy::min_ident_chars,
-        reason = "Variable `f` for `Formatter` is idiomatic. Variable `t` for an interpolation factor is idiomatic."
-    )]
-    #[expect(clippy::unwrap_in_result, reason = "Unwrap will not fail here.")]
-    #[expect(clippy::unwrap_used, reason = "Unwrap will not fail here.")]
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         if let Some((Width(mut width), _)) = terminal_size() {
