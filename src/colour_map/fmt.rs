@@ -13,13 +13,10 @@ where
 {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let width = if let Some((Width(width), _)) = terminal_size() {
-            width
-        } else {
-            60
-        };
+        let width = terminal_size().map(|(Width(w), _)| w).unwrap_or(60);
+        let denom = width.saturating_sub(1).max(1);
         for i in 0..width {
-            let t = T::from(i).unwrap() / T::from((width - 1).max(1)).unwrap();
+            let t = T::from(i).unwrap() / T::from(denom).unwrap();
             let colour = self.sample(t);
             write!(f, "{colour}")?;
         }
