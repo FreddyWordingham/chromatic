@@ -1,4 +1,4 @@
-//! Macros for implementing transparent colour types consistently.
+//! Print transparent colour types to the terminal.
 
 /// Macro to implement `Display` for transparent colour types.
 #[macro_export]

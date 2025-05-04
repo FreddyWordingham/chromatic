@@ -83,8 +83,8 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
     }
 
     #[inline]
-    fn to_srgb(&self) -> Srgb<T> {
-        self.clone()
+    fn to_srgb(&self) -> Self {
+        *self
     }
 
     #[inline]

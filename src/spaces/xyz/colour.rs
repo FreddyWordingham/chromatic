@@ -3,7 +3,7 @@
 use num_traits::Float;
 use std::num::ParseIntError;
 
-use crate::{Colour, Convert, ParseColourError, Srgb, Xyz};
+use crate::{Colour, Convert as _, ParseColourError, Srgb, Xyz};
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Xyz<T> {
     #[inline]

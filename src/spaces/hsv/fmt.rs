@@ -3,7 +3,7 @@
 use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-use crate::{Convert, Hsv, config::PRINT_BLOCK};
+use crate::{Convert as _, Hsv, config::PRINT_BLOCK};
 
 impl<T: Float + Send + Sync> Display for Hsv<T> {
     #[inline]

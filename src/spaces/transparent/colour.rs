@@ -1,3 +1,5 @@
+//! Implements the `Colour` trait for transparent colour types.
+
 /// Macro to implement the `Colour` trait for transparent colour types.
 #[macro_export]
 macro_rules! impl_transparent_colour {

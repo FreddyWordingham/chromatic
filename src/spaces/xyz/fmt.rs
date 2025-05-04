@@ -3,7 +3,7 @@
 use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-use crate::{Convert, Xyz, config::PRINT_BLOCK};
+use crate::{Convert as _, Xyz, config::PRINT_BLOCK};
 
 impl<T: Float + Send + Sync> Display for Xyz<T> {
     #[inline]

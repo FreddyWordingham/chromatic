@@ -19,10 +19,14 @@ pub struct Hsv<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> Hsv<T> {
     /// Create a new `Hsv` instance.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn new(mut hue: T, saturation: T, value: T) -> Self {
-        // Normalize hue to be within [0, 360).
-        let hue = {
+        // Normalise hue to be within [0, 360).
+        let normalised_hue = {
             let f360 = T::from(360.0).unwrap();
             while hue >= f360 {
                 hue = hue - f360;
@@ -34,7 +38,7 @@ impl<T: Float + Send + Sync> Hsv<T> {
         };
 
         debug_assert!(
-            hue >= T::zero() && hue < T::from(360.0).unwrap(),
+            normalised_hue >= T::zero() && normalised_hue < T::from(360.0).unwrap(),
             "Hue component must be between 0 and 360."
         );
         debug_assert!(
@@ -45,7 +49,11 @@ impl<T: Float + Send + Sync> Hsv<T> {
             !(value < T::zero() || value > T::one()),
             "Value component must be between 0 and 1."
         );
-        Self { hue, saturation, value }
+        Self {
+            hue: normalised_hue,
+            saturation,
+            value,
+        }
     }
 
     /// Get the `hue` component in degrees [0, 360).
@@ -67,6 +75,10 @@ impl<T: Float + Send + Sync> Hsv<T> {
     }
 
     /// Set the `hue` component in degrees [0, 360).
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn set_hue(&mut self, mut hue: T) {
         // Normalize hue to be within [0, 360)

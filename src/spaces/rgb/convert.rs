@@ -145,8 +145,8 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
     }
 
     #[inline]
-    fn to_rgb(&self) -> Rgb<T> {
-        self.clone()
+    fn to_rgb(&self) -> Self {
+        *self
     }
 
     #[inline]

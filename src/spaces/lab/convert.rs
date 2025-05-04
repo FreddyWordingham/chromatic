@@ -45,8 +45,8 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
     }
 
     #[inline]
-    fn to_lab(&self) -> Lab<T> {
-        self.clone()
+    fn to_lab(&self) -> Self {
+        *self
     }
 
     #[inline]

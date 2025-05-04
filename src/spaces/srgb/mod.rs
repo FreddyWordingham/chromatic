@@ -86,6 +86,10 @@ impl<T: Float + Send + Sync> Srgb<T> {
     ///
     /// This converts a linear RGB value to an sRGB value using the standard
     /// piecewise encoding function specified in the sRGB standard.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn gamma_encode(linear: T) -> T {
         if linear <= T::from(0.0031308).unwrap() {
@@ -99,6 +103,10 @@ impl<T: Float + Send + Sync> Srgb<T> {
     ///
     /// This converts an sRGB value to a linear RGB value using the standard
     /// piecewise decoding function specified in the sRGB standard.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn gamma_decode(srgb: T) -> T {
         if srgb <= T::from(0.04045).unwrap() {

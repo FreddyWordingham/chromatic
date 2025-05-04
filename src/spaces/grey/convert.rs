@@ -8,8 +8,8 @@ use crate::{
 
 impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
     #[inline]
-    fn to_grey(&self) -> Grey<T> {
-        self.clone()
+    fn to_grey(&self) -> Self {
+        *self
     }
 
     #[inline]

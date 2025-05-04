@@ -48,8 +48,8 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
     }
 
     #[inline]
-    fn to_hsv(&self) -> Hsv<T> {
-        self.clone()
+    fn to_hsv(&self) -> Self {
+        *self
     }
 
     #[inline]
@@ -69,6 +69,10 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), T::one())
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "These variable names are commonly used in HSV to RGB conversion."
+    )]
     #[inline]
     fn to_rgb(&self) -> Rgb<T> {
         let h = self.hue;

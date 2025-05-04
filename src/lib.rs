@@ -43,6 +43,12 @@
 )]
 #![allow(clippy::unwrap_in_result, reason = "In some cases unwrap can be guaranteed to succeed.")]
 #![allow(clippy::unwrap_used, reason = "In some cases unwrap can be guaranteed to succeed.")]
+#![allow(clippy::std_instead_of_core, reason = "Prefer std for consistency.")]
+#![allow(
+    clippy::unreadable_literal,
+    reason = "Prefer no underscores in numeric literals for consistency."
+)]
+#![allow(clippy::else_if_without_else, reason = "Eliding final else is idiomatic in Rust.")]
 
 mod colour;
 mod colour_map;

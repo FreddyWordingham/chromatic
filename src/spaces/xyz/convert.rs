@@ -98,11 +98,11 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
             self.x * T::from(0.0556434).unwrap() - self.y * T::from(0.2040259).unwrap() + self.z * T::from(1.0572252).unwrap();
 
         // Clamp to [0, 1] range
-        let r = r.max(T::zero()).min(T::one());
-        let g = g.max(T::zero()).min(T::one());
-        let b = b.max(T::zero()).min(T::one());
+        let clamped_r = r.max(T::zero()).min(T::one());
+        let clamped_g = g.max(T::zero()).min(T::one());
+        let clamped_b = b.max(T::zero()).min(T::one());
 
-        Rgb::new(r, g, b)
+        Rgb::new(clamped_r, clamped_g, clamped_b)
     }
 
     #[inline]
@@ -131,8 +131,8 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
     }
 
     #[inline]
-    fn to_xyz(&self) -> Xyz<T> {
-        self.clone()
+    fn to_xyz(&self) -> Self {
+        *self
     }
 
     #[inline]

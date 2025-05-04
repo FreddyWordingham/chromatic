@@ -28,6 +28,10 @@ pub struct Lab<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> Lab<T> {
     /// Create a new `Lab` instance.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn new(lightness: T, a_star: T, b_star: T) -> Self {
         debug_assert!(
@@ -68,6 +72,10 @@ impl<T: Float + Send + Sync> Lab<T> {
     }
 
     /// Set the `lightness` component (L).
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn set_lightness(&mut self, lightness: T) {
         debug_assert!(
@@ -78,6 +86,10 @@ impl<T: Float + Send + Sync> Lab<T> {
     }
 
     /// Set the `a_star` component.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn set_a_star(&mut self, a_star: T) {
         debug_assert!(
@@ -88,6 +100,10 @@ impl<T: Float + Send + Sync> Lab<T> {
     }
 
     /// Set the `b_star` component.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn set_b_star(&mut self, b_star: T) {
         debug_assert!(
@@ -113,7 +129,11 @@ impl<T: Float + Send + Sync> Lab<T> {
     }
 
     /// Calculate perceptual colour difference using the improved CIE94 Delta E formula.
-    /// This is more accurate than the basic delta_e method, especially for saturated colours.
+    /// This is more accurate than the basic `delta_e` method, especially for saturated colours.
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
     #[inline]
     pub fn delta_e94(&self, other: &Self) -> T {
         // Weighting factors

@@ -3,7 +3,7 @@
 use num_traits::Float;
 use std::num::ParseIntError;
 
-use crate::{Colour, Convert, Hsv, ParseColourError, Rgb};
+use crate::{Colour, Convert as _, Hsv, ParseColourError, Rgb};
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Hsv<T> {
     #[inline]

@@ -43,8 +43,8 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
     }
 
     #[inline]
-    fn to_hsl(&self) -> Hsl<T> {
-        self.clone()
+    fn to_hsl(&self) -> Self {
+        *self
     }
 
     #[inline]
@@ -64,6 +64,10 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
         LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), T::one())
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "These variable names are commonly used in HSL to RGB conversion."
+    )]
     #[inline]
     fn to_rgb(&self) -> Rgb<T> {
         let lightness = self.lightness;

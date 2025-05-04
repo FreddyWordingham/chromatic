@@ -71,12 +71,22 @@ impl<T: Float + Send + Sync> Xyz<T> {
     }
 
     /// Create an XYZ colour representing the D65 standard illuminant (daylight, 6504K).
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[must_use]
     #[inline]
     pub fn d65_reference_white() -> Self {
         Self::new(T::from(0.95047).unwrap(), T::from(1.0).unwrap(), T::from(1.08883).unwrap())
     }
 
     /// Create an XYZ colour representing the D50 standard illuminant (horizon light, 5003K).
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic.
+    #[must_use]
     #[inline]
     pub fn d50_reference_white() -> Self {
         Self::new(T::from(0.96422).unwrap(), T::from(1.0).unwrap(), T::from(0.82521).unwrap())

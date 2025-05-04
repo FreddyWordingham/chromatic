@@ -58,6 +58,10 @@ where
     }
 
     /// Create a new colour map with uniformly spaced positions.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the colours slice is empty.
     #[must_use]
     #[inline]
     pub fn new_uniform(colours: &[C]) -> Self {
@@ -72,9 +76,16 @@ where
     }
 
     /// Sample the colour map at a given position.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the position is not in the range [0, 1].
     #[inline]
     pub fn sample(&self, position: T) -> C {
-        debug_assert!((T::zero()..=T::one()).contains(&position));
+        debug_assert!(
+            (T::zero()..=T::one()).contains(&position),
+            "Position must be in range [0, 1]."
+        );
 
         // fast-edge
         if position <= self.positions[0] {
@@ -97,9 +108,10 @@ where
     }
 
     /// Get the number of control points in the `ColourMap`.
+    #[expect(clippy::len_without_is_empty, reason = "ColourMaps should never be empty.")]
     #[must_use]
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.colours.len()
     }
 
