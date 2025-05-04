@@ -1,6 +1,5 @@
 [package]
-name = "chromatic"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/FreddyWordingham/chromatic"
@@ -12,3 +11,4 @@ categories = ["graphics", "visualization"]
 assert_approx_eq = "1.1.0"
 num-traits = "0.2.19"
 terminal_size = "0.4.2"
+name = "chromatic"
