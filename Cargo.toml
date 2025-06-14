@@ -12,3 +12,4 @@ categories = ["graphics", "visualization"]
 assert_approx_eq = "1.1.0"
 num-traits = "0.2.19"
 terminal_size = "0.4.2"
+thiserror = "2.0.12"

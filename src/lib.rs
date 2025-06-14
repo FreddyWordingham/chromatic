@@ -75,15 +75,12 @@
 // )]
 // #![allow(clippy::module_inception, reason = "Modules publicly re-export types of the same name.")]
 
-mod colour;
 mod colour_map;
 mod config;
-mod convert;
-mod parse_colour_error;
+mod error;
 mod spaces;
+mod traits;
 
-pub use colour::Colour;
 pub use colour_map::ColourMap;
-pub use convert::Convert;
-pub use parse_colour_error::ParseColourError;
 pub use spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha};
+pub use traits::{Colour, Convert};

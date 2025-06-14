@@ -1,9 +1,9 @@
 //! Trait implemented by all colour types.
 
 use num_traits::Float;
-use std::{num::ParseIntError, ops::AddAssign};
+use std::ops::AddAssign;
 
-use crate::ParseColourError;
+use crate::error::ChromaticError;
 
 /// Common trait for all colour types.
 pub trait Colour<T: Float + Send + Sync, const N: usize> {
@@ -15,7 +15,7 @@ pub trait Colour<T: Float + Send + Sync, const N: usize> {
     /// # Errors
     ///
     /// Returns an error if the hex string is invalid or out of range.
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>>
+    fn from_hex(hex: &str) -> Result<Self, ChromaticError>
     where
         Self: Sized;
 

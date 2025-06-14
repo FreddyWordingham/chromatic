@@ -1,14 +1,12 @@
 //! sRGB colour representation.
 
 use num_traits::Float;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, ParseColourError, Rgb, RgbAlpha, SrgbAlpha,
-    Xyz, XyzAlpha, config::PRINT_BLOCK,
+    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, SrgbAlpha, Xyz, XyzAlpha,
+    config::PRINT_BLOCK,
+    error::{ChromaticError, Result},
 };
 
 /// sRGB colour representation.
@@ -114,8 +112,11 @@ impl<T: Float + Send + Sync> Srgb<T> {
 }
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
-        let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+    fn from_hex(hex: &str) -> Result<Self> {
+        let components = hex
+            .trim()
+            .strip_prefix('#')
+            .ok_or_else(|| ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
         let mut chars = components.chars();
         let (red, green, blue) = match components.len() {
             // Short form: #RGB
@@ -124,14 +125,25 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
                 let g_digit = chars.next().unwrap();
                 let b_digit = chars.next().unwrap();
 
-                let red = u8::from_str_radix(&r_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&g_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&b_digit.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                let red = u8::from_str_radix(&r_digit.to_string(), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
+                let green = u8::from_str_radix(&g_digit.to_string(), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
+                let blue = u8::from_str_radix(&b_digit.to_string(), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
-                let scaled_red = T::from(red * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                let scaled_green = T::from(green * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                let scaled_blue = T::from(blue * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
+                    * T::from(17).unwrap()
+                    / T::from(255).unwrap();
+                let scaled_green = T::from(green)
+                    .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
+                    * T::from(17).unwrap()
+                    / T::from(255).unwrap();
+                let scaled_blue = T::from(blue)
+                    .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
+                    * T::from(17).unwrap()
+                    / T::from(255).unwrap();
 
                 (scaled_red, scaled_green, scaled_blue)
             }
@@ -144,17 +156,25 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
                 let b1 = chars.next().unwrap().to_string();
                 let b2 = chars.next().unwrap().to_string();
 
-                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16).map_err(ParseColourError::ParseHex)?;
-                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16).map_err(ParseColourError::ParseHex)?;
+                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex red: {}", e)))?;
+                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex green: {}", e)))?;
+                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex blue: {}", e)))?;
 
-                let scaled_red = T::from(red).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                let scaled_green = T::from(green).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
-                let scaled_blue = T::from(blue).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
+                    / T::from(255).unwrap();
+                let scaled_green = T::from(green)
+                    .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
+                    / T::from(255).unwrap();
+                let scaled_blue = T::from(blue)
+                    .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
+                    / T::from(255).unwrap();
 
                 (scaled_red, scaled_green, scaled_blue)
             }
-            _ => return Err(ParseColourError::InvalidFormat),
+            _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
         };
         Ok(Self::new(red, green, blue))
     }

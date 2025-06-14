@@ -10,14 +10,11 @@
 //! should produce a change of about the same visual importance.
 
 use num_traits::Float;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, ParseColourError, Rgb, RgbAlpha, Srgb, SrgbAlpha,
-    Xyz, XyzAlpha, config::PRINT_BLOCK,
+    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    config::PRINT_BLOCK, error::Result,
 };
 
 /// LAB colour representation.
@@ -174,7 +171,7 @@ impl<T: Float + Send + Sync> Lab<T> {
 }
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Lab<T> {
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+    fn from_hex(hex: &str) -> Result<Self> {
         // Convert from hex to Lab via sRGB and XYZ
         let srgb = Srgb::from_hex(hex)?;
         Ok(srgb.to_lab())

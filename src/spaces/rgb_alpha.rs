@@ -2,14 +2,11 @@
 
 use num_traits::Float;
 
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, ParseColourError, Rgb, Srgb, SrgbAlpha, Xyz,
-    XyzAlpha, impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
+    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
 };
 
 /// RGB with alpha channel.

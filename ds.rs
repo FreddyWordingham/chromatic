@@ -2,7 +2,10 @@
 
 use num_traits::Float;
 
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    num::ParseIntError,
+};
 
 use crate::{
     Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,

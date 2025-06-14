@@ -1,14 +1,12 @@
 //! Monochrome colour representation.
 
 use num_traits::Float;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, ParseColourError, Rgb, RgbAlpha, Srgb, SrgbAlpha,
-    Xyz, XyzAlpha, config::PRINT_BLOCK,
+    Colour, Convert, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    config::PRINT_BLOCK,
+    error::{ChromaticError, Result},
 };
 
 /// Monochrome colour.
@@ -44,21 +42,29 @@ impl<T: Float + Send + Sync> Grey<T> {
 }
 
 impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
-        let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+    fn from_hex(hex: &str) -> Result<Self> {
+        let components = hex
+            .trim()
+            .strip_prefix('#')
+            .ok_or_else(|| ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
         let grey = match components.len() {
             // Short form: #G
             1 => {
-                let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
+                let value = u8::from_str_radix(components, 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
                 // Expand short form (e.g., #F becomes #FF)
-                T::from(value * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap()
+                T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
+                    * T::from(17).unwrap()
+                    / T::from(255).unwrap()
             }
             // Long form: #GG
             2 => {
-                let value = u8::from_str_radix(components, 16).map_err(ParseColourError::ParseHex)?;
-                T::from(value).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap()
+                let value = u8::from_str_radix(components, 16)
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex value: {}", e)))?;
+                T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
+                    / T::from(255).unwrap()
             }
-            _ => return Err(ParseColourError::InvalidFormat),
+            _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
         };
         Ok(Self::new(grey))
     }

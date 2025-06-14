@@ -1,14 +1,11 @@
 //! HSV (Hue, Saturation, Value) colour representation.
 
 use num_traits::Float;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, HsvAlpha, Lab, LabAlpha, ParseColourError, Rgb, RgbAlpha, Srgb, SrgbAlpha,
-    Xyz, XyzAlpha, config::PRINT_BLOCK,
+    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    config::PRINT_BLOCK, error::Result,
 };
 
 /// HSV colour representation.
@@ -117,7 +114,7 @@ impl<T: Float + Send + Sync> Hsv<T> {
 }
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Hsv<T> {
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+    fn from_hex(hex: &str) -> Result<Self> {
         Ok(Rgb::from_hex(hex)?.to_hsv())
     }
 

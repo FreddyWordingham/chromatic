@@ -3,14 +3,11 @@
 //! It was created to be a standard reference space for mapping human colour perception.
 
 use num_traits::Float;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    num::ParseIntError,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, ParseColourError, Rgb, RgbAlpha, Srgb,
-    SrgbAlpha, XyzAlpha, config::PRINT_BLOCK,
+    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, XyzAlpha,
+    config::PRINT_BLOCK, error::Result,
 };
 
 /// XYZ colour representation.
@@ -106,7 +103,7 @@ impl<T: Float + Send + Sync> Xyz<T> {
 }
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Xyz<T> {
-    fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
+    fn from_hex(hex: &str) -> Result<Self> {
         // Convert from hex to XYZ via sRGB
         // First parse the hex to sRGB
         let srgb = Srgb::from_hex(hex)?;

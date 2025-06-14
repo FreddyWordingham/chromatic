@@ -3,10 +3,13 @@
 /// Macro to implement the `Colour` trait for transparent colour types.
 #[macro_export]
 macro_rules! impl_transparent_colour {
-    ($type:ty, $base:ty, $base_components:expr) => {
+    ($type:ty, $base:ty, $base_components:literal) => {
         impl<T: Float + Send + Sync> Colour<T, { $base_components + 1 }> for $type {
-            fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
-                let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
+            fn from_hex(hex: &str) -> Result<Self, $crate::error::ChromaticError> {
+                let components = hex
+                    .trim()
+                    .strip_prefix('#')
+                    .ok_or_else(|| $crate::error::ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
                 let chars: Vec<char> = components.chars().collect();
 
                 match chars.len() {
@@ -19,10 +22,14 @@ macro_rules! impl_transparent_colour {
 
                         // Parse alpha (single hex digit)
                         let alpha_char = chars[$base_components];
-                        let alpha_val = u8::from_str_radix(&alpha_char.to_string(), 16).map_err(ParseColourError::ParseHex)?;
+                        let alpha_val = u8::from_str_radix(&alpha_char.to_string(), 16)
+                            .map_err(|e| $crate::error::ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
 
                         // Expand from single hex digit (e.g., F -> FF)
-                        let alpha = T::from(alpha_val * 17).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                        let alpha = T::from(alpha_val)
+                            .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
+                            * T::from(17).unwrap()
+                            / T::from(255).unwrap();
 
                         Ok(Self::new_colour_with_alpha(colour, alpha))
                     }
@@ -35,13 +42,18 @@ macro_rules! impl_transparent_colour {
 
                         // Parse alpha (two hex digits)
                         let alpha_hex: String = chars[($base_components * 2)..].iter().collect();
-                        let alpha_val = u8::from_str_radix(&alpha_hex, 16).map_err(ParseColourError::ParseHex)?;
+                        let alpha_val = u8::from_str_radix(&alpha_hex, 16)
+                            .map_err(|e| $crate::error::ChromaticError::ColourParsing(format!("Invalid hex alpha: {}", e)))?;
 
-                        let alpha = T::from(alpha_val).ok_or(ParseColourError::OutOfRange)? / T::from(255).unwrap();
+                        let alpha = T::from(alpha_val)
+                            .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
+                            / T::from(255).unwrap();
 
                         Ok(Self::new_colour_with_alpha(colour, alpha))
                     }
-                    _ => Err(ParseColourError::InvalidFormat),
+                    _ => Err($crate::error::ChromaticError::ColourParsing(
+                        "Invalid hex format".to_string(),
+                    )),
                 }
             }
 
