@@ -110,6 +110,12 @@ where
         self.colours.len()
     }
 
+    /// Check if the `ColourMap` is empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.colours.is_empty()
+    }
+
     /// Get a reference to the colours in the map.
     #[must_use]
     pub fn colours(&self) -> &[C] {
