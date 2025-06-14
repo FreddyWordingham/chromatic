@@ -23,7 +23,6 @@ pub struct HsvAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> HsvAlpha<T> {
     /// Create a new `HsvAlpha` instance.
-    #[inline]
     pub fn new(hue: T, saturation: T, value: T, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -36,7 +35,6 @@ impl<T: Float + Send + Sync> HsvAlpha<T> {
     }
 
     /// Create a new `HsvAlpha` instance from a `Hsv` colour and an alpha component.
-    #[inline]
     fn new_colour_with_alpha(colour: Hsv<T>, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -46,55 +44,46 @@ impl<T: Float + Send + Sync> HsvAlpha<T> {
     }
 
     /// Get the base `colour`.
-    #[inline]
     const fn colour(&self) -> &Hsv<T> {
         &self.colour
     }
 
     /// Get the `hue` component.
-    #[inline]
     pub const fn hue(&self) -> T {
         self.colour.hue()
     }
 
     /// Get the `saturation` component.
-    #[inline]
     pub const fn saturation(&self) -> T {
         self.colour.saturation()
     }
 
     /// Get the `value` component.
-    #[inline]
     pub const fn value(&self) -> T {
         self.colour.value()
     }
 
     /// Get the `alpha` component.
-    #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
     /// Set the `hue` component.
-    #[inline]
     pub fn set_hue(&mut self, red: T) {
         self.colour.set_hue(red);
     }
 
     /// Set the `saturation` component.
-    #[inline]
     pub fn set_saturation(&mut self, green: T) {
         self.colour.set_saturation(green);
     }
 
     /// Set the `value` component.
-    #[inline]
     pub fn set_value(&mut self, blue: T) {
         self.colour.set_value(blue);
     }
 
     /// Set the `alpha` component.
-    #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),

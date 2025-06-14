@@ -23,7 +23,6 @@ pub struct GreyAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> GreyAlpha<T> {
     /// Create a new `GreyAlpha` instance.
-    #[inline]
     pub fn new(grey: T, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -36,7 +35,6 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
     }
 
     /// Create a new `GreyAlpha` instance from a `Grey` colour and an alpha component.
-    #[inline]
     fn new_colour_with_alpha(colour: Grey<T>, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -46,25 +44,21 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
     }
 
     /// Get the base `colour`.
-    #[inline]
     const fn colour(&self) -> &Grey<T> {
         &self.colour
     }
 
     /// Get the `grey` component.
-    #[inline]
     pub const fn grey(&self) -> T {
         self.colour.grey()
     }
 
     /// Get the `alpha` component.
-    #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
     /// Set the `grey` component.
-    #[inline]
     pub fn set_grey(&mut self, grey: T) {
         debug_assert!(
             grey >= T::zero() && grey <= T::one(),
@@ -74,7 +68,6 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
     }
 
     /// Set the `alpha` component.
-    #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),

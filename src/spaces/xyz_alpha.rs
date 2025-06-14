@@ -23,7 +23,6 @@ pub struct XyzAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> XyzAlpha<T> {
     /// Create a new `XyzAlpha` instance.
-    #[inline]
     pub fn new(x: T, y: T, z: T, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -36,7 +35,6 @@ impl<T: Float + Send + Sync> XyzAlpha<T> {
     }
 
     /// Create a new `XyzAlpha` instance from a `Xyz` colour and an alpha component.
-    #[inline]
     fn new_colour_with_alpha(colour: Xyz<T>, alpha: T) -> Self {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),
@@ -46,55 +44,46 @@ impl<T: Float + Send + Sync> XyzAlpha<T> {
     }
 
     /// Get the base `colour`.
-    #[inline]
     const fn colour(&self) -> &Xyz<T> {
         &self.colour
     }
 
     /// Get the `x` component.
-    #[inline]
     pub const fn x(&self) -> T {
         self.colour.x()
     }
 
     /// Get the `y` component.
-    #[inline]
     pub const fn y(&self) -> T {
         self.colour.y()
     }
 
     /// Get the `z` component.
-    #[inline]
     pub const fn z(&self) -> T {
         self.colour.z()
     }
 
     /// Get the `alpha` component.
-    #[inline]
     pub const fn alpha(&self) -> T {
         self.alpha
     }
 
     /// Set the `x` component.
-    #[inline]
     pub fn set_x(&mut self, x: T) {
         self.colour.set_x(x);
     }
 
     /// Set the `y` component.
-    #[inline]
     pub fn set_y(&mut self, y: T) {
         self.colour.set_y(y);
     }
 
     /// Set the `z` component.
-    #[inline]
     pub fn set_z(&mut self, z: T) {
         self.colour.set_z(z);
     }
 
     /// Set the `alpha` component.
-    #[inline]
     pub fn set_alpha(&mut self, alpha: T) {
         debug_assert!(
             alpha >= T::zero() && alpha <= T::one(),

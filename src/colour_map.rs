@@ -3,10 +3,10 @@
 //! This module provides the `ColourMap` struct, which allows for interpolation between colours.
 
 use num_traits::Float;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use terminal_size::{Width, terminal_size};
 
 use crate::Colour;
-
-mod fmt;
 
 /// A map of colours at specific positions, with interpolation between them.
 #[derive(Debug, Clone)]
@@ -28,7 +28,6 @@ where
 {
     /// Create a new colour map from a list of colours and positions.
     #[must_use]
-    #[inline]
     pub fn new(colours: &[C], positions: &[T]) -> Self {
         debug_assert!(!colours.is_empty(), "Colour map must have at least one colour.");
         debug_assert_eq!(
@@ -63,7 +62,6 @@ where
     ///
     /// Panics if the colours slice is empty.
     #[must_use]
-    #[inline]
     pub fn new_uniform(colours: &[C]) -> Self {
         debug_assert!(!colours.is_empty(), "Colour map must have at least one colour.");
         if colours.len() == 1 {
@@ -80,7 +78,6 @@ where
     /// # Panics
     ///
     /// Panics if the position is not in the range [0, 1].
-    #[inline]
     pub fn sample(&self, position: T) -> C {
         debug_assert!(
             (T::zero()..=T::one()).contains(&position),
@@ -108,24 +105,37 @@ where
     }
 
     /// Get the number of control points in the `ColourMap`.
-    #[expect(clippy::len_without_is_empty, reason = "ColourMaps should never be empty.")]
     #[must_use]
-    #[inline]
     pub const fn len(&self) -> usize {
         self.colours.len()
     }
 
     /// Get a reference to the colours in the map.
     #[must_use]
-    #[inline]
     pub fn colours(&self) -> &[C] {
         &self.colours
     }
 
     /// Get a reference to the positions in the map.
     #[must_use]
-    #[inline]
     pub fn positions(&self) -> &[T] {
         &self.positions
+    }
+}
+
+impl<C, T, const N: usize> Display for ColourMap<C, T, N>
+where
+    C: Display + Clone + Colour<T, N>,
+    T: Float + Send + Sync,
+{
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
+        let width = terminal_size().map_or(60, |(Width(w), _)| w);
+        let denom = width.saturating_sub(1).max(1);
+        for i in 0..width {
+            let t = T::from(i).unwrap() / T::from(denom).unwrap();
+            let colour = self.sample(t);
+            write!(fmt, "{colour}")?;
+        }
+        Ok(())
     }
 }

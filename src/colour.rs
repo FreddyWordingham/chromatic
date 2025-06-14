@@ -43,7 +43,6 @@ pub trait Colour<T: Float + Send + Sync, const N: usize> {
     /// Panics if the lengths of colours and weights do not match.
     /// Panics if any weight is negative.
     #[must_use]
-    #[inline]
     fn mix(colours: &[Self], weights: &[T]) -> Self
     where
         Self: Clone,

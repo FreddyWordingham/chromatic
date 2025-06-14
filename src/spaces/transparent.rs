@@ -1,11 +1,10 @@
-//! Implements the `Colour` trait for transparent colour types.
+//! Colours with transparency.
 
 /// Macro to implement the `Colour` trait for transparent colour types.
 #[macro_export]
 macro_rules! impl_transparent_colour {
     ($type:ty, $base:ty, $base_components:expr) => {
         impl<T: Float + Send + Sync> Colour<T, { $base_components + 1 }> for $type {
-            #[inline]
             fn from_hex(hex: &str) -> Result<Self, ParseColourError<ParseIntError>> {
                 let components = hex.trim().strip_prefix('#').ok_or(ParseColourError::InvalidFormat)?;
                 let chars: Vec<char> = components.chars().collect();
@@ -46,7 +45,6 @@ macro_rules! impl_transparent_colour {
                 }
             }
 
-            #[inline]
             fn to_hex(&self) -> String {
                 let max = T::from(255_u8).unwrap();
                 let colour_hex = self.colour().to_hex();
@@ -57,7 +55,6 @@ macro_rules! impl_transparent_colour {
                 format!("#{}{:02X}", colour_part, alpha)
             }
 
-            #[inline]
             fn from_bytes(bytes: [u8; $base_components + 1]) -> Self {
                 let max = T::from(255_u8).unwrap();
 
@@ -73,7 +70,6 @@ macro_rules! impl_transparent_colour {
                 Self::new_colour_with_alpha(colour, alpha)
             }
 
-            #[inline]
             fn to_bytes(self) -> [u8; $base_components + 1] {
                 let max = T::from(255_u8).unwrap();
                 let base_bytes = self.colour().to_bytes();
@@ -93,7 +89,6 @@ macro_rules! impl_transparent_colour {
                 result
             }
 
-            #[inline]
             fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
                 debug_assert!(
                     t >= T::zero() && t <= T::one(),
@@ -107,6 +102,89 @@ macro_rules! impl_transparent_colour {
                 let alpha = lhs.alpha() * (T::one() - t) + rhs.alpha() * t;
 
                 Self::new_colour_with_alpha(colour, alpha)
+            }
+        }
+    };
+}
+
+/// Macro to implement the `Convert` trait for transparent colour types.
+#[macro_export]
+macro_rules! impl_transparent_convert {
+    ($type:ty, $base:ty) => {
+        impl<T: Float + Send + Sync> Convert<T> for $type {
+            fn to_grey(&self) -> Grey<T> {
+                self.colour().to_grey()
+            }
+
+            fn to_grey_alpha(&self) -> GreyAlpha<T> {
+                let grey = self.colour().to_grey();
+                GreyAlpha::new(grey.grey(), self.alpha())
+            }
+
+            fn to_hsl(&self) -> Hsl<T> {
+                self.colour().to_hsl()
+            }
+
+            fn to_hsl_alpha(&self) -> HslAlpha<T> {
+                let hsl = self.colour().to_hsl();
+                HslAlpha::new(hsl.hue(), hsl.saturation(), hsl.lightness(), self.alpha())
+            }
+
+            fn to_hsv(&self) -> Hsv<T> {
+                self.colour().to_hsv()
+            }
+
+            fn to_hsv_alpha(&self) -> HsvAlpha<T> {
+                let hsv = self.colour().to_hsv();
+                HsvAlpha::new(hsv.hue(), hsv.saturation(), hsv.value(), self.alpha())
+            }
+
+            fn to_lab(&self) -> Lab<T> {
+                self.colour().to_lab()
+            }
+
+            fn to_lab_alpha(&self) -> LabAlpha<T> {
+                let lab = self.colour().to_lab();
+                LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), self.alpha())
+            }
+
+            fn to_rgb(&self) -> Rgb<T> {
+                self.colour().to_rgb()
+            }
+
+            fn to_rgb_alpha(&self) -> RgbAlpha<T> {
+                let rgb = self.colour().to_rgb();
+                RgbAlpha::new(rgb.red(), rgb.green(), rgb.blue(), self.alpha())
+            }
+
+            fn to_srgb(&self) -> Srgb<T> {
+                self.colour().to_srgb()
+            }
+
+            fn to_srgb_alpha(&self) -> SrgbAlpha<T> {
+                let srgb = self.colour().to_srgb();
+                SrgbAlpha::new(srgb.red(), srgb.green(), srgb.blue(), self.alpha())
+            }
+
+            fn to_xyz(&self) -> Xyz<T> {
+                self.colour().to_xyz()
+            }
+
+            fn to_xyz_alpha(&self) -> XyzAlpha<T> {
+                let xyz = self.colour().to_xyz();
+                XyzAlpha::new(xyz.x(), xyz.y(), xyz.z(), self.alpha())
+            }
+        }
+    };
+}
+
+/// Macro to implement `Display` for transparent colour types.
+#[macro_export]
+macro_rules! impl_transparent_display {
+    ($type:ty) => {
+        impl<T: Float + Send + Sync> Display for $type {
+            fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
+                write!(fmt, "{}", self.colour())
             }
         }
     };
