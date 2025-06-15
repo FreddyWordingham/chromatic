@@ -1,7 +1,10 @@
 //! Monochrome colour representation.
 
 use num_traits::Float;
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    any::type_name,
+    fmt::{Display, Formatter, Result as FmtResult},
+};
 
 use crate::{
     config::PRINT_BLOCK,
@@ -88,7 +91,7 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
         let max: T = safe_constant::<i32, T>(255_i32)?;
         let scaled = (self.grey * max).round();
         let grey = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: std::any::type_name::<T>().to_string(),
+            from: type_name::<T>().to_string(),
             to: "u8".to_string(),
             reason: format!(
                 "Grey value {} is outside u8 range [0, 255]",
@@ -107,7 +110,7 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
         let max: T = safe_constant::<u8, T>(255_u8)?;
         let scaled = (self.grey * max).round();
         let value = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: std::any::type_name::<T>().to_string(),
+            from: type_name::<T>().to_string(),
             to: "u8".to_string(),
             reason: format!(
                 "Grey value {} is outside u8 range [0, 255]",

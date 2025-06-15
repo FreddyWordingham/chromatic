@@ -1,7 +1,7 @@
 //! Error handling for the `Chromatic` library.
 
 use num_traits::{Float, ToPrimitive};
-use std::fmt::Display;
+use std::{any::type_name, fmt::Display};
 use thiserror::Error;
 
 mod colour_map;
@@ -156,8 +156,8 @@ impl From<ChromaticError> for std::fmt::Error {
 pub fn safe_constant<S: Copy + Send + Sync + Display + ToPrimitive, T: Send + Sync + Float>(value: S) -> Result<T> {
     T::from(value).ok_or_else(|| {
         NumericError::TypeConversionFailed {
-            from: std::any::type_name::<S>().to_string(),
-            to: std::any::type_name::<T>().to_string(),
+            from: type_name::<S>().to_string(),
+            to: type_name::<T>().to_string(),
             reason: format!("Failed to convert constant: {}", value),
         }
         .into()

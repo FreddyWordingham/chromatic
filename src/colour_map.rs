@@ -4,6 +4,7 @@
 
 use num_traits::{Float, NumCast};
 use std::{
+    any::type_name,
     fmt::{Display, Formatter, Result as FmtResult},
     marker::PhantomData,
 };
@@ -58,7 +59,7 @@ where
         if position < T::zero() || position > T::one() {
             return Err(ColourMapError::InvalidSamplingPosition {
                 position: NumCast::from(position).ok_or_else(|| NumericError::TypeConversionFailed {
-                    from: std::any::type_name::<T>().to_string(),
+                    from: type_name::<T>().to_string(),
                     to: "f64".to_string(),
                     reason: "Failed to convert position for error reporting".to_string(),
                 })?,
@@ -82,7 +83,7 @@ where
         // Calculate which segment we're in
         let segments = T::from(self.colours.len() - 1).ok_or_else(|| NumericError::TypeConversionFailed {
             from: "usize".to_string(),
-            to: std::any::type_name::<T>().to_string(),
+            to: type_name::<T>().to_string(),
             reason: "Failed to convert segment count".to_string(),
         })?;
 
@@ -91,7 +92,7 @@ where
             .floor()
             .to_usize()
             .ok_or_else(|| NumericError::TypeConversionFailed {
-                from: std::any::type_name::<T>().to_string(),
+                from: type_name::<T>().to_string(),
                 to: "usize".to_string(),
                 reason: "Failed to convert segment index".to_string(),
             })?
@@ -100,7 +101,7 @@ where
         // Calculate interpolation parameter within the segment
         let segment_start = T::from(segment_idx).ok_or_else(|| NumericError::TypeConversionFailed {
             from: "usize".to_string(),
-            to: std::any::type_name::<T>().to_string(),
+            to: type_name::<T>().to_string(),
             reason: "Failed to convert segment start".to_string(),
         })? / segments;
 
