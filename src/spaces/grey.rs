@@ -160,12 +160,12 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
     }
 
     fn to_srgb(&self) -> Result<Srgb<T>> {
-        let sg = Srgb::gamma_encode(self.grey);
+        let sg = Srgb::gamma_encode(self.grey)?;
         Srgb::new(sg, sg, sg)
     }
 
     fn to_srgb_alpha(&self) -> Result<SrgbAlpha<T>> {
-        let sg = Srgb::gamma_encode(self.grey);
+        let sg = Srgb::gamma_encode(self.grey)?;
         SrgbAlpha::new(sg, sg, sg, T::one())
     }
 

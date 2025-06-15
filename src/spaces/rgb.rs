@@ -361,9 +361,9 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
 
     fn to_srgb(&self) -> Result<Srgb<T>> {
         // Convert from linear RGB to gamma-encoded sRGB
-        let r_srgb = Srgb::gamma_encode(self.red);
-        let g_srgb = Srgb::gamma_encode(self.green);
-        let b_srgb = Srgb::gamma_encode(self.blue);
+        let r_srgb = Srgb::gamma_encode(self.red)?;
+        let g_srgb = Srgb::gamma_encode(self.green)?;
+        let b_srgb = Srgb::gamma_encode(self.blue)?;
 
         Srgb::new(r_srgb, g_srgb, b_srgb)
     }

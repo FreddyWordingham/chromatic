@@ -91,12 +91,12 @@ impl<T: Float + Send + Sync> Srgb<T> {
     /// # Panics
     ///
     /// This function will not panic.
-    pub fn gamma_encode(linear: T) -> T {
-        if linear <= T::from(0.003_130_8).unwrap() {
+    pub fn gamma_encode(linear: T) -> Result<T> {
+        Ok(if linear <= T::from(0.003_130_8).unwrap() {
             T::from(12.92).unwrap() * linear
         } else {
             T::from(1.055).unwrap() * linear.powf(T::from(1.0 / 2.4).unwrap()) - T::from(0.055).unwrap()
-        }
+        })
     }
 
     /// Apply the standard sRGB gamma decoding to an sRGB component.

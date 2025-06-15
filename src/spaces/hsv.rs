@@ -303,9 +303,9 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         let rgb = self.to_rgb()?;
 
         // Then convert linear RGB to sRGB
-        let r_srgb = Srgb::gamma_encode(rgb.red());
-        let g_srgb = Srgb::gamma_encode(rgb.green());
-        let b_srgb = Srgb::gamma_encode(rgb.blue());
+        let r_srgb = Srgb::gamma_encode(rgb.red())?;
+        let g_srgb = Srgb::gamma_encode(rgb.green())?;
+        let b_srgb = Srgb::gamma_encode(rgb.blue())?;
 
         Srgb::new(r_srgb, g_srgb, b_srgb)
     }
