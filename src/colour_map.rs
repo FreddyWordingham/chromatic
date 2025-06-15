@@ -9,7 +9,10 @@ use std::{
 };
 use terminal_size::{Width, terminal_size};
 
-use crate::{Colour, error::ColourMapError};
+use crate::{
+    Colour,
+    error::{ColourMapError, NumericError, Result},
+};
 
 /// A map of colours at specific positions, with interpolation between them.
 #[derive(Debug, Clone)]
@@ -34,9 +37,9 @@ where
     /// # Errors
     ///
     /// Returns an error if the colour map is empty.
-    pub fn new(colours: &[C]) -> Result<Self, ColourMapError> {
+    pub fn new(colours: &[C]) -> Result<Self> {
         if colours.is_empty() {
-            return Err(ColourMapError::EmptyColourMap);
+            return Err(ColourMapError::EmptyColourMap.into());
         }
 
         Ok(Self {
@@ -49,12 +52,18 @@ where
     ///
     /// # Errors
     ///
-    /// Returns an error if the sampled position is outside the range [0, 1].
-    pub fn sample(&self, position: T) -> Result<C, ColourMapError> {
+    /// Returns an error if the sampled position is outside the range [0, 1],
+    /// or if numeric conversion fails during interpolation calculations.
+    pub fn sample(&self, position: T) -> Result<C> {
         if position < T::zero() || position > T::one() {
             return Err(ColourMapError::InvalidSamplingPosition {
-                position: NumCast::from(position).expect("Conversion to f64 failed"),
-            });
+                position: NumCast::from(position).ok_or_else(|| NumericError::TypeConversionFailed {
+                    from: std::any::type_name::<T>().to_string(),
+                    to: "f64".to_string(),
+                    reason: "Failed to convert position for error reporting".to_string(),
+                })?,
+            }
+            .into());
         }
 
         // Single colour case
@@ -71,16 +80,34 @@ where
         }
 
         // Calculate which segment we're in
-        let segments = T::from(self.colours.len() - 1).unwrap();
+        let segments = T::from(self.colours.len() - 1).ok_or_else(|| NumericError::TypeConversionFailed {
+            from: "usize".to_string(),
+            to: std::any::type_name::<T>().to_string(),
+            reason: "Failed to convert segment count".to_string(),
+        })?;
+
         let scaled_pos = position * segments;
-        let segment_idx = scaled_pos.floor().to_usize().unwrap().min(self.colours.len() - 2);
+        let segment_idx = scaled_pos
+            .floor()
+            .to_usize()
+            .ok_or_else(|| NumericError::TypeConversionFailed {
+                from: std::any::type_name::<T>().to_string(),
+                to: "usize".to_string(),
+                reason: "Failed to convert segment index".to_string(),
+            })?
+            .min(self.colours.len() - 2);
 
         // Calculate interpolation parameter within the segment
-        let segment_start = T::from(segment_idx).unwrap() / segments;
+        let segment_start = T::from(segment_idx).ok_or_else(|| NumericError::TypeConversionFailed {
+            from: "usize".to_string(),
+            to: std::any::type_name::<T>().to_string(),
+            reason: "Failed to convert segment start".to_string(),
+        })? / segments;
+
         let segment_width = T::one() / segments;
         let t = (position - segment_start) / segment_width;
 
-        Ok(C::lerp(&self.colours[segment_idx], &self.colours[segment_idx + 1], t))
+        C::lerp(&self.colours[segment_idx], &self.colours[segment_idx + 1], t)
     }
 
     /// Get the number of control points in the `ColourMap`.
@@ -111,11 +138,12 @@ where
         let width = terminal_size().map_or(60, |(Width(w), _)| w);
         let denom = width.saturating_sub(1).max(1);
         for i in 0..width {
-            let t = T::from(i).unwrap() / T::from(denom).unwrap();
-            // Handle the error gracefully instead of using ?
+            // Handle numeric conversion error in Display - convert to fmt::Error
+            let t = T::from(i).ok_or(std::fmt::Error)? / T::from(denom).ok_or(std::fmt::Error)?;
+
             match self.sample(t) {
                 Ok(colour) => write!(fmt, "{colour}")?,
-                Err(_) => return Err(std::fmt::Error), // Convert to fmt::Error
+                Err(_) => return Err(std::fmt::Error),
             }
         }
         Ok(())

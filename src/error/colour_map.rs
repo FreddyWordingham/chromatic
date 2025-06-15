@@ -1,8 +1,8 @@
-//! ColourMap specific errors.
+//! `ColourMap` specific errors.
 
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Debug, Clone, Copy, Error)]
 pub enum ColourMapError {
     #[error("Empty colour map: at least one colour required")]
     EmptyColourMap,

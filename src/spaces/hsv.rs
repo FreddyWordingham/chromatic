@@ -4,8 +4,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
-    config::PRINT_BLOCK, error::Result,
+    config::PRINT_BLOCK,
+    error::{ChromaticError, Result},
+    spaces::{Grey, GreyAlpha, Hsl, HslAlpha, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// HSV colour representation.
@@ -20,41 +22,73 @@ pub struct Hsv<T: Float + Send + Sync> {
 }
 
 impl<T: Float + Send + Sync> Hsv<T> {
-    /// Create a new `Hsv` instance.
+    /// Create a new `Hsv` instance with validation.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
-    pub fn new(mut hue: T, saturation: T, value: T) -> Self {
-        // Normalise hue to be within [0, 360).
-        let normalised_hue = {
-            let f360 = T::from(360.0).unwrap();
-            while hue >= f360 {
-                hue = hue - f360;
-            }
-            while hue < T::zero() {
-                hue = hue + f360;
-            }
-            hue
-        };
+    /// Returns an error if saturation or value are outside [0, 1],
+    /// or if hue normalization fails.
+    pub fn new(hue: T, saturation: T, value: T) -> Result<Self> {
+        let normalized_hue = Self::normalize_hue(hue)?;
+        Self::validate_saturation(saturation)?;
+        Self::validate_value(value)?;
 
-        debug_assert!(
-            normalised_hue >= T::zero() && normalised_hue < T::from(360.0).unwrap(),
-            "Hue component must be between 0 and 360."
-        );
-        debug_assert!(
-            !(saturation < T::zero() || saturation > T::one()),
-            "Saturation component must be between 0 and 1."
-        );
-        debug_assert!(
-            !(value < T::zero() || value > T::one()),
-            "Value component must be between 0 and 1."
-        );
-        Self {
-            hue: normalised_hue,
+        Ok(Self {
+            hue: normalized_hue,
             saturation,
             value,
+        })
+    }
+
+    /// Normalize hue to be within [0, 360) range.
+    fn normalize_hue(mut hue: T) -> Result<T> {
+        let f360 = T::from(360.0).ok_or_else(|| ChromaticError::Math("Failed to convert 360.0 to target type".to_string()))?;
+
+        // Handle potential infinite loops by limiting iterations
+        let mut iterations = 0;
+        const MAX_ITERATIONS: usize = 1000;
+
+        while hue >= f360 && iterations < MAX_ITERATIONS {
+            hue = hue - f360;
+            iterations += 1;
         }
+
+        iterations = 0;
+        while hue < T::zero() && iterations < MAX_ITERATIONS {
+            hue = hue + f360;
+            iterations += 1;
+        }
+
+        if iterations >= MAX_ITERATIONS {
+            return Err(ChromaticError::Math(format!(
+                "Hue normalization failed: value too large ({})",
+                hue.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+
+        Ok(hue)
+    }
+
+    /// Validate saturation is in range [0, 1].
+    fn validate_saturation(saturation: T) -> Result<()> {
+        if saturation < T::zero() || saturation > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Saturation ({}) must be between 0 and 1",
+                saturation.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
+    }
+
+    /// Validate value is in range [0, 1].
+    fn validate_value(value: T) -> Result<()> {
+        if value < T::zero() || value > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Value ({}) must be between 0 and 1",
+                value.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the `hue` component in degrees [0, 360).
@@ -72,88 +106,100 @@ impl<T: Float + Send + Sync> Hsv<T> {
         self.value
     }
 
-    /// Set the `hue` component in degrees [0, 360).
+    /// Set the `hue` component with validation.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
-    pub fn set_hue(&mut self, mut hue: T) {
-        // Normalize hue to be within [0, 360)
-        let f360 = T::from(360.0).unwrap();
-        while hue >= f360 {
-            hue = hue - f360;
-        }
-        while hue < T::zero() {
-            hue = hue + f360;
-        }
-
-        debug_assert!(
-            hue >= T::zero() && hue < T::from(360.0).unwrap(),
-            "Hue component must be between 0 and 360."
-        );
-        self.hue = hue;
+    /// Returns an error if hue normalization fails.
+    pub fn set_hue(&mut self, hue: T) -> Result<()> {
+        self.hue = Self::normalize_hue(hue)?;
+        Ok(())
     }
 
-    /// Set the `saturation` component.
-    pub fn set_saturation(&mut self, saturation: T) {
-        debug_assert!(
-            saturation >= T::zero() && saturation <= T::one(),
-            "Saturation component must be between 0 and 1."
-        );
+    /// Set the `saturation` component with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
+    pub fn set_saturation(&mut self, saturation: T) -> Result<()> {
+        Self::validate_saturation(saturation)?;
         self.saturation = saturation;
+        Ok(())
     }
 
-    /// Set the `value` component.
-    pub fn set_value(&mut self, value: T) {
-        debug_assert!(
-            value >= T::zero() && value <= T::one(),
-            "Value component must be between 0 and 1."
-        );
+    /// Set the `value` component with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
+    pub fn set_value(&mut self, value: T) -> Result<()> {
+        Self::validate_value(value)?;
         self.value = value;
+        Ok(())
+    }
+
+    /// Set all components at once with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component is invalid.
+    pub fn set_components(&mut self, hue: T, saturation: T, value: T) -> Result<()> {
+        let normalized_hue = Self::normalize_hue(hue)?;
+        Self::validate_saturation(saturation)?;
+        Self::validate_value(value)?;
+
+        self.hue = normalized_hue;
+        self.saturation = saturation;
+        self.value = value;
+        Ok(())
     }
 }
-
 impl<T: Float + Send + Sync> Colour<T, 3> for Hsv<T> {
     fn from_hex(hex: &str) -> Result<Self> {
-        Ok(Rgb::from_hex(hex)?.to_hsv())
+        Rgb::from_hex(hex)?.to_hsv()
     }
 
-    fn to_hex(&self) -> String {
-        self.to_rgb().to_hex()
+    fn to_hex(&self) -> Result<String> {
+        self.to_rgb()?.to_hex()
     }
 
-    fn from_bytes(bytes: [u8; 3]) -> Self {
-        Rgb::from_bytes(bytes).to_hsv()
+    fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
+        Rgb::from_bytes(bytes)?.to_hsv()
     }
 
-    fn to_bytes(self) -> [u8; 3] {
-        self.to_rgb().to_bytes()
+    fn to_bytes(self) -> Result<[u8; 3]> {
+        self.to_rgb()?.to_bytes()
     }
 
     /// Linear interpolate between two HSV colours.
     /// This uses the shortest path around the hue circle for interpolation.
-    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        debug_assert!(
-            t >= T::zero() && t <= T::one(),
-            "Interpolation factor must be in range [0, 1]."
-        );
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
+        if t < T::zero() || t > T::one() {
+            return Err(ChromaticError::Interpolation(format!(
+                "Interpolation factor ({}) must be between 0 and 1",
+                t.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
 
         // For hue, we need special handling to ensure we take the shortest path around the color wheel
         let mut hue_diff = rhs.hue - lhs.hue;
 
         // If the difference is greater than 180 degrees, it's shorter to go the other way around the color wheel
-        if hue_diff > T::from(180).unwrap() {
-            hue_diff = hue_diff - T::from(360).unwrap();
-        } else if hue_diff < T::from(-180).unwrap() {
-            hue_diff = hue_diff + T::from(360).unwrap();
+        let f180 = T::from(180.0).unwrap_or_else(|| T::zero());
+        let f360 = T::from(360.0).unwrap_or_else(|| T::one());
+
+        if hue_diff > f180 {
+            hue_diff = hue_diff - f360;
+        } else if hue_diff < -f180 {
+            hue_diff = hue_diff + f360;
         }
 
         // Calculate the interpolated hue and ensure it stays in [0, 360] range
         let mut hue = lhs.hue + t * hue_diff;
         if hue < T::zero() {
-            hue = hue + T::from(360).unwrap();
-        } else if hue > T::from(360).unwrap() {
-            hue = hue - T::from(360).unwrap();
+            hue = hue + f360;
+        } else if hue >= f360 {
+            hue = hue - f360;
         }
 
         // Linear interpolation for saturation and value
@@ -165,15 +211,15 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Hsv<T> {
 }
 
 impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
-    fn to_grey(&self) -> Grey<T> {
+    fn to_grey(&self) -> Result<Grey<T>> {
         Grey::new(self.value)
     }
 
-    fn to_grey_alpha(&self) -> GreyAlpha<T> {
+    fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
         GreyAlpha::new(self.value, T::one())
     }
 
-    fn to_hsl(&self) -> Hsl<T> {
+    fn to_hsl(&self) -> Result<Hsl<T>> {
         // Convert HSV to HSL
         // Hue remains the same
         let hue = self.hue;
@@ -196,34 +242,30 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         Hsl::new(hue, saturation, lightness)
     }
 
-    fn to_hsl_alpha(&self) -> HslAlpha<T> {
-        let hsl = self.to_hsl();
+    fn to_hsl_alpha(&self) -> Result<HslAlpha<T>> {
+        let hsl = self.to_hsl()?;
         HslAlpha::new(hsl.hue(), hsl.saturation(), hsl.lightness(), T::one())
     }
 
-    fn to_hsv(&self) -> Self {
-        *self
+    fn to_hsv(&self) -> Result<Self> {
+        Ok(*self)
     }
 
-    fn to_hsv_alpha(&self) -> HsvAlpha<T> {
+    fn to_hsv_alpha(&self) -> Result<HsvAlpha<T>> {
         HsvAlpha::new(self.hue, self.saturation, self.value, T::one())
     }
 
-    fn to_lab(&self) -> Lab<T> {
+    fn to_lab(&self) -> Result<Lab<T>> {
         // Convert HSV to Lab via XYZ
-        self.to_xyz().to_lab()
+        self.to_xyz()?.to_lab()
     }
 
-    fn to_lab_alpha(&self) -> LabAlpha<T> {
-        let lab = self.to_lab();
+    fn to_lab_alpha(&self) -> Result<LabAlpha<T>> {
+        let lab = self.to_lab()?;
         LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), T::one())
     }
 
-    #[expect(
-        clippy::many_single_char_names,
-        reason = "These variable names are commonly used in HSV to RGB conversion."
-    )]
-    fn to_rgb(&self) -> Rgb<T> {
+    fn to_rgb(&self) -> Result<Rgb<T>> {
         let h = self.hue;
         let s = self.saturation;
         let v = self.value;
@@ -250,15 +292,15 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         Rgb::new(r + m, g + m, b + m)
     }
 
-    fn to_rgb_alpha(&self) -> RgbAlpha<T> {
-        let rgb = self.to_rgb();
+    fn to_rgb_alpha(&self) -> Result<RgbAlpha<T>> {
+        let rgb = self.to_rgb()?;
         RgbAlpha::new(rgb.red(), rgb.green(), rgb.blue(), T::one())
     }
 
-    fn to_srgb(&self) -> Srgb<T> {
+    fn to_srgb(&self) -> Result<Srgb<T>> {
         // Convert HSV to sRGB via linear RGB
         // First convert to linear RGB
-        let rgb = self.to_rgb();
+        let rgb = self.to_rgb()?;
 
         // Then convert linear RGB to sRGB
         let r_srgb = Srgb::gamma_encode(rgb.red());
@@ -268,25 +310,25 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         Srgb::new(r_srgb, g_srgb, b_srgb)
     }
 
-    fn to_srgb_alpha(&self) -> SrgbAlpha<T> {
-        let srgb = self.to_srgb();
+    fn to_srgb_alpha(&self) -> Result<SrgbAlpha<T>> {
+        let srgb = self.to_srgb()?;
         SrgbAlpha::new(srgb.red(), srgb.green(), srgb.blue(), T::one())
     }
 
-    fn to_xyz(&self) -> Xyz<T> {
+    fn to_xyz(&self) -> Result<Xyz<T>> {
         // Convert HSV to XYZ via linear RGB
-        self.to_rgb().to_xyz()
+        self.to_rgb()?.to_xyz()
     }
 
-    fn to_xyz_alpha(&self) -> XyzAlpha<T> {
-        let xyz = self.to_xyz();
+    fn to_xyz_alpha(&self) -> Result<XyzAlpha<T>> {
+        let xyz = self.to_xyz()?;
         XyzAlpha::new(xyz.x(), xyz.y(), xyz.z(), T::one())
     }
 }
 
 impl<T: Float + Send + Sync> Display for Hsv<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let rgb = self.to_rgb();
+        let rgb = self.to_rgb()?;
         let max = T::from(255_i32).unwrap();
         let red = (rgb.red() * max).round().to_u8().unwrap();
         let green = (rgb.green() * max).round().to_u8().unwrap();

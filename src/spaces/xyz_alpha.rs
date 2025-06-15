@@ -5,8 +5,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz,
+    error::{ChromaticError, Result},
     impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
+    spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz},
+    traits::{Colour, Convert},
 };
 
 /// XYZ with alpha channel.
@@ -20,24 +22,32 @@ pub struct XyzAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> XyzAlpha<T> {
     /// Create a new `XyzAlpha` instance.
-    pub fn new(x: T, y: T, z: T, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self {
-            colour: Xyz::new(x, y, z),
+    pub fn new(x: T, y: T, z: T, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self {
+            colour: Xyz::new(x, y, z)?,
             alpha,
-        }
+        })
     }
 
     /// Create a new `XyzAlpha` instance from a `Xyz` colour and an alpha component.
-    fn new_colour_with_alpha(colour: Xyz<T>, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self { colour, alpha }
+    fn new_colour_with_alpha(colour: Xyz<T>, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self { colour, alpha })
+    }
+
+    /// Validate a single component is in range [0, 1].
+    fn validate_component(value: T, name: &str) -> Result<()> {
+        if value < T::zero() || value > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "{} component ({}) must be between 0 and 1",
+                name,
+                value.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the base `colour`.

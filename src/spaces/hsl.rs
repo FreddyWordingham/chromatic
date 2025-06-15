@@ -4,8 +4,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
-    config::PRINT_BLOCK, error::Result,
+    config::PRINT_BLOCK,
+    error::{ChromaticError, Result},
+    spaces::{Grey, GreyAlpha, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// HSL colour representation.
@@ -20,44 +22,76 @@ pub struct Hsl<T: Float + Send + Sync> {
 }
 
 impl<T: Float + Send + Sync> Hsl<T> {
-    /// Create a new `Hsl` instance.
+    /// Create a new `Hsl` instance with validation.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
-    pub fn new(mut hue: T, saturation: T, lightness: T) -> Self {
-        // Normalise hue to be within [0, 360).
-        let normalised_hue = {
-            let f360 = T::from(360.0).unwrap();
-            while hue >= f360 {
-                hue = hue - f360;
-            }
-            while hue < T::zero() {
-                hue = hue + f360;
-            }
-            hue
-        };
+    /// Returns an error if saturation or lightness are outside [0, 1],
+    /// or if hue normalization fails.
+    pub fn new(hue: T, saturation: T, lightness: T) -> Result<Self> {
+        let normalized_hue = Self::normalize_hue(hue)?;
+        Self::validate_saturation(saturation)?;
+        Self::validate_lightness(lightness)?;
 
-        debug_assert!(
-            normalised_hue >= T::zero() && normalised_hue < T::from(360.0).unwrap(),
-            "Hue component must be between 0 and 360."
-        );
-        debug_assert!(
-            !(saturation < T::zero() || saturation > T::one()),
-            "Saturation component must be between 0 and 1."
-        );
-        debug_assert!(
-            !(lightness < T::zero() || lightness > T::one()),
-            "Lightness component must be between 0 and 1."
-        );
-        Self {
-            hue: normalised_hue,
+        Ok(Self {
+            hue: normalized_hue,
             saturation,
             lightness,
-        }
+        })
     }
 
-    /// Get the `hue` component in degrees [0, 360).
+    /// Normalize hue to be within [0, 360) range.
+    fn normalize_hue(mut hue: T) -> Result<T> {
+        let f360 = T::from(360.0).ok_or_else(|| ChromaticError::Math("Failed to convert 360.0 to target type".to_string()))?;
+
+        // Handle potential infinite loops by limiting iterations
+        let mut iterations = 0;
+        const MAX_ITERATIONS: usize = 1000;
+
+        while hue >= f360 && iterations < MAX_ITERATIONS {
+            hue = hue - f360;
+            iterations += 1;
+        }
+
+        iterations = 0;
+        while hue < T::zero() && iterations < MAX_ITERATIONS {
+            hue = hue + f360;
+            iterations += 1;
+        }
+
+        if iterations >= MAX_ITERATIONS {
+            return Err(ChromaticError::Math(format!(
+                "Hue normalization failed: value too large ({})",
+                hue.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+
+        Ok(hue)
+    }
+
+    /// Validate saturation is in range [0, 1].
+    fn validate_saturation(saturation: T) -> Result<()> {
+        if saturation < T::zero() || saturation > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Saturation ({}) must be between 0 and 1",
+                saturation.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
+    }
+
+    /// Validate lightness is in range [0, 1].
+    fn validate_lightness(lightness: T) -> Result<()> {
+        if lightness < T::zero() || lightness > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Lightness ({}) must be between 0 and 1",
+                lightness.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
+    }
+
+    /// Get the `hue` component.
     pub const fn hue(&self) -> T {
         self.hue
     }
@@ -72,71 +106,53 @@ impl<T: Float + Send + Sync> Hsl<T> {
         self.lightness
     }
 
-    /// Set the `hue` component in degrees [0, 360).
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    pub fn set_hue(&mut self, mut hue: T) {
-        // Normalize hue to be within [0, 360)
-        let f360 = T::from(360.0).unwrap();
-        while hue >= f360 {
-            hue = hue - f360;
-        }
-        while hue < T::zero() {
-            hue = hue + f360;
-        }
-
-        debug_assert!(
-            hue >= T::zero() && hue < T::from(360.0).unwrap(),
-            "Hue component must be between 0 and 360."
-        );
-        self.hue = hue;
+    /// Set the `hue` component with validation.
+    pub fn set_hue(&mut self, hue: T) -> Result<()> {
+        self.hue = Self::normalize_hue(hue)?;
+        Ok(())
     }
 
-    /// Set the `saturation` component.
-    pub fn set_saturation(&mut self, saturation: T) {
-        debug_assert!(
-            saturation >= T::zero() && saturation <= T::one(),
-            "Saturation component must be between 0 and 1."
-        );
+    /// Set the `saturation` component with validation.
+    pub fn set_saturation(&mut self, saturation: T) -> Result<()> {
+        Self::validate_saturation(saturation)?;
         self.saturation = saturation;
+        Ok(())
     }
 
-    /// Set the `lightness` component.
-    pub fn set_lightness(&mut self, lightness: T) {
-        debug_assert!(
-            lightness >= T::zero() && lightness <= T::one(),
-            "Lightness component must be between 0 and 1."
-        );
+    /// Set the `lightness` component with validation.
+    pub fn set_lightness(&mut self, lightness: T) -> Result<()> {
+        Self::validate_lightness(lightness)?;
         self.lightness = lightness;
+        Ok(())
     }
 }
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Hsl<T> {
     fn from_hex(hex: &str) -> Result<Self> {
-        Ok(Rgb::from_hex(hex)?.to_hsl())
+        Rgb::from_hex(hex)?.to_hsl()
     }
 
-    fn to_hex(&self) -> String {
-        self.to_rgb().to_hex()
+    fn to_hex(&self) -> Result<String> {
+        self.to_rgb()?.to_hex()
     }
 
-    fn from_bytes(bytes: [u8; 3]) -> Self {
-        Rgb::from_bytes(bytes).to_hsl()
+    fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
+        Rgb::from_bytes(bytes)?.to_hsl()
     }
 
-    fn to_bytes(self) -> [u8; 3] {
-        self.to_rgb().to_bytes()
+    fn to_bytes(self) -> Result<[u8; 3]> {
+        self.to_rgb()?.to_bytes()
     }
 
     /// Linear interpolate between two HSL colours.
     /// This uses the shortest path around the hue circle for interpolation.
-    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        debug_assert!(
-            t >= T::zero() && t <= T::one(),
-            "Interpolation factor must be in range [0, 1]."
-        );
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
+        if t < T::zero() || t > T::one() {
+            return Err(ChromaticError::Interpolation(format!(
+                "Interpolation factor ({}) must be between 0 and 1",
+                t.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
 
         // For hue, we need special handling to ensure we take the shortest path around the color wheel
         let mut hue_diff = rhs.hue - lhs.hue;
@@ -165,15 +181,23 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Hsl<T> {
 }
 
 impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
-    fn to_grey(&self) -> Grey<T> {
+    fn to_grey(&self) -> Result<Grey<T>> {
         Grey::new(self.lightness)
     }
 
-    fn to_grey_alpha(&self) -> GreyAlpha<T> {
+    fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
         GreyAlpha::new(self.lightness, T::one())
     }
 
-    fn to_hsv(&self) -> Hsv<T> {
+    fn to_hsl(&self) -> Result<Self> {
+        Ok(*self)
+    }
+
+    fn to_hsl_alpha(&self) -> Result<HslAlpha<T>> {
+        HslAlpha::new(self.hue, self.saturation, self.lightness, T::one())
+    }
+
+    fn to_hsv(&self) -> Result<Hsv<T>> {
         // v = L + S_l * min(L, 1-L)
         let delta =
             self.saturation * (T::one() - (T::from(2.0).unwrap() * self.lightness - T::one()).abs()) / T::from(2.0).unwrap();
@@ -191,34 +215,22 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
         Hsv::new(self.hue, s, v)
     }
 
-    fn to_hsv_alpha(&self) -> HsvAlpha<T> {
-        let hsv = self.to_hsv();
+    fn to_hsv_alpha(&self) -> Result<HsvAlpha<T>> {
+        let hsv = self.to_hsv()?;
         HsvAlpha::new(hsv.hue(), hsv.saturation(), hsv.value(), T::one())
     }
 
-    fn to_hsl(&self) -> Self {
-        *self
-    }
-
-    fn to_hsl_alpha(&self) -> HslAlpha<T> {
-        HslAlpha::new(self.hue, self.saturation, self.lightness, T::one())
-    }
-
-    fn to_lab(&self) -> Lab<T> {
+    fn to_lab(&self) -> Result<Lab<T>> {
         // Convert HSL to Lab via RGB and XYZ
-        self.to_rgb().to_lab()
+        self.to_rgb()?.to_lab()
     }
 
-    fn to_lab_alpha(&self) -> LabAlpha<T> {
-        let lab = self.to_lab();
+    fn to_lab_alpha(&self) -> Result<LabAlpha<T>> {
+        let lab = self.to_lab()?;
         LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), T::one())
     }
 
-    #[expect(
-        clippy::many_single_char_names,
-        reason = "These variable names are commonly used in HSL to RGB conversion."
-    )]
-    fn to_rgb(&self) -> Rgb<T> {
+    fn to_rgb(&self) -> Result<Rgb<T>> {
         let lightness = self.lightness;
         let saturation = self.saturation;
 
@@ -269,14 +281,14 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
         Rgb::new(r, g, b)
     }
 
-    fn to_rgb_alpha(&self) -> RgbAlpha<T> {
-        let rgb = self.to_rgb();
+    fn to_rgb_alpha(&self) -> Result<RgbAlpha<T>> {
+        let rgb = self.to_rgb()?;
         RgbAlpha::new(rgb.red(), rgb.green(), rgb.blue(), T::one())
     }
 
-    fn to_srgb(&self) -> Srgb<T> {
+    fn to_srgb(&self) -> Result<Srgb<T>> {
         // Convert HSL to sRGB via linear RGB
-        let rgb = self.to_rgb();
+        let rgb = self.to_rgb()?;
         let r_srgb = Srgb::gamma_encode(rgb.red());
         let g_srgb = Srgb::gamma_encode(rgb.green());
         let b_srgb = Srgb::gamma_encode(rgb.blue());
@@ -284,25 +296,25 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
         Srgb::new(r_srgb, g_srgb, b_srgb)
     }
 
-    fn to_srgb_alpha(&self) -> SrgbAlpha<T> {
-        let srgb = self.to_srgb();
+    fn to_srgb_alpha(&self) -> Result<SrgbAlpha<T>> {
+        let srgb = self.to_srgb()?;
         SrgbAlpha::new(srgb.red(), srgb.green(), srgb.blue(), T::one())
     }
 
-    fn to_xyz(&self) -> Xyz<T> {
+    fn to_xyz(&self) -> Result<Xyz<T>> {
         // Convert HSL to XYZ via linear RGB
-        self.to_rgb().to_xyz()
+        self.to_rgb()?.to_xyz()
     }
 
-    fn to_xyz_alpha(&self) -> XyzAlpha<T> {
-        let xyz = self.to_xyz();
+    fn to_xyz_alpha(&self) -> Result<XyzAlpha<T>> {
+        let xyz = self.to_xyz()?;
         XyzAlpha::new(xyz.x(), xyz.y(), xyz.z(), T::one())
     }
 }
 
 impl<T: Float + Send + Sync> Display for Hsl<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let rgb = self.to_rgb();
+        let rgb = self.to_rgb()?;
         let max = T::from(255_i32).unwrap();
         let red = (rgb.red() * max).round().to_u8().unwrap();
         let green = (rgb.green() * max).round().to_u8().unwrap();

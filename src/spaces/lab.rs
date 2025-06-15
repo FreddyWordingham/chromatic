@@ -13,8 +13,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
-    config::PRINT_BLOCK, error::Result,
+    config::PRINT_BLOCK,
+    error::{ChromaticError, Result},
+    spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// LAB colour representation.
@@ -29,29 +31,62 @@ pub struct Lab<T: Float + Send + Sync> {
 }
 
 impl<T: Float + Send + Sync> Lab<T> {
-    /// Create a new `Lab` instance.
+    /// Create a new `Lab` instance with validation.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
-    pub fn new(lightness: T, a_star: T, b_star: T) -> Self {
-        debug_assert!(
-            lightness >= T::zero() && lightness <= T::from(100.0).unwrap(),
-            "Lightness component must be between 0 and 100."
-        );
-        debug_assert!(
-            a_star >= T::from(-128.0).unwrap() && a_star <= T::from(127.0).unwrap(),
-            "a component must be between -128 and 127."
-        );
-        debug_assert!(
-            b_star >= T::from(-128.0).unwrap() && b_star <= T::from(127.0).unwrap(),
-            "b component must be between -128 and 127."
-        );
-        Self {
+    /// Returns an error if lightness is outside [0, 100] or if a*/b* are outside [-128, 127].
+    pub fn new(lightness: T, a_star: T, b_star: T) -> Result<Self> {
+        Self::validate_lightness(lightness)?;
+        Self::validate_a_star(a_star)?;
+        Self::validate_b_star(b_star)?;
+
+        Ok(Self {
             lightness,
             a_star,
             b_star,
+        })
+    }
+
+    /// Validate lightness is in range [0, 100].
+    fn validate_lightness(lightness: T) -> Result<()> {
+        let max = T::from(100.0).ok_or_else(|| ChromaticError::Math("Failed to convert 100.0 to target type".to_string()))?;
+
+        if lightness < T::zero() || lightness > max {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Lightness ({}) must be between 0 and 100",
+                lightness.to_f64().unwrap_or(f64::NAN)
+            )));
         }
+        Ok(())
+    }
+
+    /// Validate a* component is in range [-128, 127].
+    fn validate_a_star(a_star: T) -> Result<()> {
+        let min = T::from(-128.0).ok_or_else(|| ChromaticError::Math("Failed to convert -128.0 to target type".to_string()))?;
+        let max = T::from(127.0).ok_or_else(|| ChromaticError::Math("Failed to convert 127.0 to target type".to_string()))?;
+
+        if a_star < min || a_star > max {
+            return Err(ChromaticError::InvalidColour(format!(
+                "a* component ({}) must be between -128 and 127",
+                a_star.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
+    }
+
+    /// Validate b* component is in range [-128, 127].
+    fn validate_b_star(b_star: T) -> Result<()> {
+        let min = T::from(-128.0).ok_or_else(|| ChromaticError::Math("Failed to convert -128.0 to target type".to_string()))?;
+        let max = T::from(127.0).ok_or_else(|| ChromaticError::Math("Failed to convert 127.0 to target type".to_string()))?;
+
+        if b_star < min || b_star > max {
+            return Err(ChromaticError::InvalidColour(format!(
+                "b* component ({}) must be between -128 and 127",
+                b_star.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the `lightness` component (L*).
@@ -69,43 +104,25 @@ impl<T: Float + Send + Sync> Lab<T> {
         self.b_star
     }
 
-    /// Set the `lightness` component (L).
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    pub fn set_lightness(&mut self, lightness: T) {
-        debug_assert!(
-            lightness >= T::zero() && lightness <= T::from(100.0).unwrap(),
-            "Lightness component must be between 0 and 100."
-        );
+    /// Set the `lightness` component with validation.
+    pub fn set_lightness(&mut self, lightness: T) -> Result<()> {
+        Self::validate_lightness(lightness)?;
         self.lightness = lightness;
+        Ok(())
     }
 
-    /// Set the `a_star` component.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    pub fn set_a_star(&mut self, a_star: T) {
-        debug_assert!(
-            a_star >= T::from(-128.0).unwrap() && a_star <= T::from(127.0).unwrap(),
-            "a component must be between -128 and 127."
-        );
+    /// Set the `a_star` component with validation.
+    pub fn set_a_star(&mut self, a_star: T) -> Result<()> {
+        Self::validate_a_star(a_star)?;
         self.a_star = a_star;
+        Ok(())
     }
 
-    /// Set the `b_star` component.
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic.
-    pub fn set_b_star(&mut self, b_star: T) {
-        debug_assert!(
-            b_star >= T::from(-128.0).unwrap() && b_star <= T::from(127.0).unwrap(),
-            "b component must be between -128 and 127."
-        );
+    /// Set the `b_star` component with validation.
+    pub fn set_b_star(&mut self, b_star: T) -> Result<()> {
+        Self::validate_b_star(b_star)?;
         self.b_star = b_star;
+        Ok(())
     }
 
     /// Calculate perceptual colour difference in Lab space (CIE76 Delta E).
@@ -174,33 +191,36 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Lab<T> {
     fn from_hex(hex: &str) -> Result<Self> {
         // Convert from hex to Lab via sRGB and XYZ
         let srgb = Srgb::from_hex(hex)?;
-        Ok(srgb.to_lab())
+        srgb.to_lab()
     }
 
-    fn to_hex(&self) -> String {
+    fn to_hex(&self) -> Result<String> {
         // Convert to hex via sRGB
-        self.to_srgb().to_hex()
+        self.to_srgb()?.to_hex()
     }
 
-    fn from_bytes(bytes: [u8; 3]) -> Self {
+    fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
         // Convert from bytes to Lab via sRGB and XYZ
-        Srgb::from_bytes(bytes).to_lab()
+        Srgb::from_bytes(bytes)?.to_lab()
     }
 
-    fn to_bytes(self) -> [u8; 3] {
+    fn to_bytes(self) -> Result<[u8; 3]> {
         // Convert to bytes via sRGB
-        self.to_srgb().to_bytes()
+        self.to_srgb()?.to_bytes()
     }
 
     /// Linear interpolate between two Lab colours.
     ///
     /// Lab is designed to be perceptually uniform, so linear interpolation
     /// in this space produces perceptually uniform gradients.
-    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        debug_assert!(
-            t >= T::zero() && t <= T::one(),
-            "Interpolation factor must be in range [0, 1]."
-        );
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
+        if t < T::zero() || t > T::one() {
+            return Err(ChromaticError::Interpolation(format!(
+                "Interpolation factor ({}) must be between 0 and 1",
+                t.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+
         Self::new(
             lhs.lightness * (T::one() - t) + rhs.lightness * t,
             lhs.a_star * (T::one() - t) + rhs.a_star * t,
@@ -210,72 +230,72 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Lab<T> {
 }
 
 impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
-    fn to_grey(&self) -> Grey<T> {
+    fn to_grey(&self) -> Result<Grey<T>> {
         // For greyscale, we should just use the L component (lightness)
         // We need to normalize from [0, 100] to [0, 1]
         let l_normalized = self.lightness / T::from(100.0).unwrap();
         Grey::new(l_normalized)
     }
 
-    fn to_grey_alpha(&self) -> GreyAlpha<T> {
+    fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
         let l_normalized = self.lightness / T::from(100.0).unwrap();
         GreyAlpha::new(l_normalized, T::one())
     }
 
-    fn to_hsl(&self) -> Hsl<T> {
-        self.to_rgb().to_hsl()
+    fn to_hsl(&self) -> Result<Hsl<T>> {
+        self.to_rgb()?.to_hsl()
     }
 
-    fn to_hsl_alpha(&self) -> HslAlpha<T> {
-        let hsl = self.to_hsl();
+    fn to_hsl_alpha(&self) -> Result<HslAlpha<T>> {
+        let hsl = self.to_hsl()?;
         HslAlpha::new(hsl.hue(), hsl.saturation(), hsl.lightness(), T::one())
     }
 
-    fn to_hsv(&self) -> Hsv<T> {
+    fn to_hsv(&self) -> Result<Hsv<T>> {
         // Convert Lab to HSV via XYZ and RGB
-        self.to_xyz().to_rgb().to_hsv()
+        self.to_xyz()?.to_rgb()?.to_hsv()
     }
 
-    fn to_hsv_alpha(&self) -> HsvAlpha<T> {
-        let hsv = self.to_hsv();
+    fn to_hsv_alpha(&self) -> Result<HsvAlpha<T>> {
+        let hsv = self.to_hsv()?;
         HsvAlpha::new(hsv.hue(), hsv.saturation(), hsv.value(), T::one())
     }
 
-    fn to_lab(&self) -> Self {
-        *self
+    fn to_lab(&self) -> Result<Self> {
+        Ok(*self)
     }
 
-    fn to_lab_alpha(&self) -> LabAlpha<T> {
+    fn to_lab_alpha(&self) -> Result<LabAlpha<T>> {
         LabAlpha::new(self.lightness(), self.a_star(), self.b_star(), T::one())
     }
 
-    fn to_rgb(&self) -> Rgb<T> {
+    fn to_rgb(&self) -> Result<Rgb<T>> {
         // Convert Lab to RGB via XYZ
-        self.to_xyz().to_rgb()
+        self.to_xyz()?.to_rgb()
     }
 
-    fn to_rgb_alpha(&self) -> RgbAlpha<T> {
-        let rgb = self.to_rgb();
+    fn to_rgb_alpha(&self) -> Result<RgbAlpha<T>> {
+        let rgb = self.to_rgb()?;
         RgbAlpha::new(rgb.red(), rgb.green(), rgb.blue(), T::one())
     }
 
-    fn to_srgb(&self) -> Srgb<T> {
+    fn to_srgb(&self) -> Result<Srgb<T>> {
         // Convert Lab to sRGB via XYZ
-        self.to_xyz().to_srgb()
+        self.to_xyz()?.to_srgb()
     }
 
-    fn to_srgb_alpha(&self) -> SrgbAlpha<T> {
-        let srgb = self.to_srgb();
+    fn to_srgb_alpha(&self) -> Result<SrgbAlpha<T>> {
+        let srgb = self.to_srgb()?;
         SrgbAlpha::new(srgb.red(), srgb.green(), srgb.blue(), T::one())
     }
 
-    fn to_xyz(&self) -> Xyz<T> {
+    fn to_xyz(&self) -> Result<Xyz<T>> {
         // Constants for the conversion
-        let epsilon = T::from(0.008856).unwrap(); // Intent is 216/24389
+        let epsilon = T::from(0.008_856).unwrap(); // Intent is 216/24389
         let kappa = T::from(903.3).unwrap(); // Intent is 24389/27
 
         // D65 reference white
-        let ref_white = Xyz::<T>::d65_reference_white();
+        let ref_white = Xyz::<T>::d65_reference_white()?;
 
         // Compute f_y
         let l = self.lightness;
@@ -312,8 +332,8 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
         Xyz::new(x, y, z)
     }
 
-    fn to_xyz_alpha(&self) -> XyzAlpha<T> {
-        let xyz = self.to_xyz();
+    fn to_xyz_alpha(&self) -> Result<XyzAlpha<T>> {
+        let xyz = self.to_xyz()?;
         XyzAlpha::new(xyz.x(), xyz.y(), xyz.z(), T::one())
     }
 }
@@ -321,7 +341,7 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
 impl<T: Float + Send + Sync> Display for Lab<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         // Convert to RGB for terminal display
-        let rgb = self.to_rgb();
+        let rgb = self.to_rgb()?;
         let max = T::from(255_i32).unwrap();
         let red = (rgb.red() * max).round().to_u8().unwrap();
         let green = (rgb.green() * max).round().to_u8().unwrap();

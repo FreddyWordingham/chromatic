@@ -5,8 +5,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    error::{ChromaticError, Result},
     impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
+    spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// Lab with alpha channel.
@@ -20,24 +22,32 @@ pub struct LabAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> LabAlpha<T> {
     /// Create a new `LabAlpha` instance.
-    pub fn new(l: T, a: T, b: T, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self {
-            colour: Lab::new(l, a, b),
+    pub fn new(l: T, a: T, b: T, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self {
+            colour: Lab::new(l, a, b)?,
             alpha,
-        }
+        })
     }
 
     /// Create a new `LabAlpha` instance from a `Lab` colour and an alpha component.
-    fn new_colour_with_alpha(colour: Lab<T>, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self { colour, alpha }
+    fn new_colour_with_alpha(colour: Lab<T>, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self { colour, alpha })
+    }
+
+    /// Validate a single component is in range [0, 1].
+    fn validate_component(value: T, name: &str) -> Result<()> {
+        if value < T::zero() || value > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "{} component ({}) must be between 0 and 1",
+                name,
+                value.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the base `colour`.
@@ -66,27 +76,25 @@ impl<T: Float + Send + Sync> LabAlpha<T> {
     }
 
     /// Set the `lightness` component.
-    pub fn set_lightness(&mut self, l: T) {
-        self.colour.set_lightness(l);
+    pub fn set_lightness(&mut self, l: T) -> Result<()> {
+        self.colour.set_lightness(l)
     }
 
     /// Set the `a_star` component.
-    pub fn set_a_star(&mut self, a: T) {
-        self.colour.set_a_star(a);
+    pub fn set_a_star(&mut self, a: T) -> Result<()> {
+        self.colour.set_a_star(a)
     }
 
     /// Set the `b_star` component.
-    pub fn set_b_star(&mut self, b: T) {
-        self.colour.set_b_star(b);
+    pub fn set_b_star(&mut self, b: T) -> Result<()> {
+        self.colour.set_b_star(b)
     }
 
     /// Set the `alpha` component.
-    pub fn set_alpha(&mut self, alpha: T) {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
+    pub fn set_alpha(&mut self, alpha: T) -> Result<()> {
+        Self::validate_component(alpha, "alpha")?;
         self.alpha = alpha;
+        Ok(())
     }
 
     /// Calculate perceptual color difference in Lab space (CIE76 Delta E),

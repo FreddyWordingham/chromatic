@@ -70,7 +70,7 @@ pub enum ChromaticError {
     #[error("Interpolation error: {0}")]
     Interpolation(String),
 
-    /// ColourMap construction or sampling failure.
+    /// `ColourMap` construction or sampling failure.
     ///
     /// This error occurs when creating colour maps with invalid parameters or
     /// when sampling operations fail due to invalid positions or empty maps.
@@ -141,5 +141,11 @@ impl From<ColourMapError> for ChromaticError {
 impl From<NumericError> for ChromaticError {
     fn from(err: NumericError) -> Self {
         Self::Math(err.to_string())
+    }
+}
+
+impl From<ChromaticError> for std::fmt::Error {
+    fn from(_: ChromaticError) -> Self {
+        Self
     }
 }

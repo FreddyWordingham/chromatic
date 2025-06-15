@@ -4,9 +4,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
     config::PRINT_BLOCK,
     error::{ChromaticError, Result},
+    spaces::{GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// Monochrome colour.
@@ -17,13 +18,25 @@ pub struct Grey<T: Float + Send + Sync> {
 }
 
 impl<T: Float + Send + Sync> Grey<T> {
-    /// Create a new `Grey` instance.
-    pub fn new(grey: T) -> Self {
-        debug_assert!(
-            !(grey < T::zero() || grey > T::one()),
-            "Grey component must be between 0 and 1."
-        );
-        Self { grey }
+    /// Create a new `Grey` instance with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the grey value is outside the range [0, 1].
+    pub fn new(grey: T) -> Result<Self> {
+        Self::validate_grey(grey)?;
+        Ok(Self { grey })
+    }
+
+    /// Validate grey component is in range [0, 1].
+    fn validate_grey(grey: T) -> Result<()> {
+        if grey < T::zero() || grey > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "Grey component ({}) must be between 0 and 1",
+                grey.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the `grey` component.
@@ -31,13 +44,15 @@ impl<T: Float + Send + Sync> Grey<T> {
         self.grey
     }
 
-    /// Set the `grey` component.
-    pub fn set_grey(&mut self, grey: T) {
-        debug_assert!(
-            grey >= T::zero() && grey <= T::one(),
-            "Grey component must be between 0 and 1."
-        );
+    /// Set the `grey` component with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
+    pub fn set_grey(&mut self, grey: T) -> Result<()> {
+        Self::validate_grey(grey)?;
         self.grey = grey;
+        Ok(())
     }
 }
 
@@ -51,7 +66,7 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
             // Short form: #G
             1 => {
                 let value = u8::from_str_radix(components, 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {}", e)))?;
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {e}")))?;
                 // Expand short form (e.g., #F becomes #FF)
                 T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
                     * T::from(17).unwrap()
@@ -60,105 +75,108 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
             // Long form: #GG
             2 => {
                 let value = u8::from_str_radix(components, 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex value: {}", e)))?;
+                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex value: {e}")))?;
                 T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
                     / T::from(255).unwrap()
             }
             _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
         };
-        Ok(Self::new(grey))
+        Self::new(grey)
     }
 
-    fn to_hex(&self) -> String {
+    fn to_hex(&self) -> Result<String> {
         let max = T::from(255_i32).unwrap();
         let grey = (self.grey * max).round().to_u8().unwrap();
-        format!("#{grey:02X}")
+        Ok(format!("#{grey:02X}"))
     }
 
-    fn from_bytes(bytes: [u8; 1]) -> Self {
+    fn from_bytes(bytes: [u8; 1]) -> Result<Self> {
         let max = T::from(255_u8).unwrap();
         let value = T::from(bytes[0]).unwrap() / max;
         Self::new(value)
     }
 
-    fn to_bytes(self) -> [u8; 1] {
+    fn to_bytes(self) -> Result<[u8; 1]> {
         let max = T::from(255_u8).unwrap();
         let value = (self.grey * max).round().to_u8().unwrap();
-        [value]
+        Ok([value])
     }
 
-    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Self {
-        debug_assert!(
-            t >= T::zero() && t <= T::one(),
-            "Interpolation factor must be in range [0, 1]."
-        );
+    fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
+        if t < T::zero() || t > T::one() {
+            return Err(ChromaticError::Interpolation(format!(
+                "Interpolation factor ({}) must be between 0 and 1",
+                t.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+
         Self::new(lhs.grey() * (T::one() - t) + rhs.grey() * t)
     }
 }
 
 impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
-    fn to_grey(&self) -> Self {
-        *self
+    fn to_grey(&self) -> Result<Self> {
+        Ok(*self)
     }
 
-    fn to_grey_alpha(&self) -> GreyAlpha<T> {
+    fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
         GreyAlpha::new(self.grey, T::one())
     }
 
-    fn to_hsl(&self) -> Hsl<T> {
+    fn to_hsl(&self) -> Result<Hsl<T>> {
         // For greyscale, hue is undefined (0), saturation is 0, and lightness equals the grey value
         Hsl::new(T::zero(), T::zero(), self.grey)
     }
 
-    fn to_hsl_alpha(&self) -> HslAlpha<T> {
+    fn to_hsl_alpha(&self) -> Result<HslAlpha<T>> {
         HslAlpha::new(T::zero(), T::zero(), self.grey, T::one())
     }
 
-    fn to_hsv(&self) -> Hsv<T> {
+    fn to_hsv(&self) -> Result<Hsv<T>> {
         // For greyscale, hue is undefined (0), saturation is 0, and value equals the grey value
         Hsv::new(T::zero(), T::zero(), self.grey)
     }
 
-    fn to_hsv_alpha(&self) -> HsvAlpha<T> {
+    fn to_hsv_alpha(&self) -> Result<HsvAlpha<T>> {
         HsvAlpha::new(T::zero(), T::zero(), self.grey, T::one())
     }
 
-    fn to_lab(&self) -> Lab<T> {
+    fn to_lab(&self) -> Result<Lab<T>> {
         // Convert Grey to Lab via XYZ
-        self.to_xyz().to_lab()
+        self.to_xyz()?.to_lab()
     }
 
-    fn to_lab_alpha(&self) -> LabAlpha<T> {
-        let lab = self.to_lab();
+    fn to_lab_alpha(&self) -> Result<LabAlpha<T>> {
+        let lab = self.to_lab()?;
         LabAlpha::new(lab.lightness(), lab.a_star(), lab.b_star(), T::one())
     }
 
-    fn to_rgb(&self) -> Rgb<T> {
+    fn to_rgb(&self) -> Result<Rgb<T>> {
         Rgb::new(self.grey, self.grey, self.grey)
     }
 
-    fn to_rgb_alpha(&self) -> RgbAlpha<T> {
+    fn to_rgb_alpha(&self) -> Result<RgbAlpha<T>> {
         RgbAlpha::new(self.grey, self.grey, self.grey, T::one())
     }
 
-    fn to_srgb(&self) -> Srgb<T> {
+    fn to_srgb(&self) -> Result<Srgb<T>> {
         let sg = Srgb::gamma_encode(self.grey);
         Srgb::new(sg, sg, sg)
     }
 
-    fn to_srgb_alpha(&self) -> SrgbAlpha<T> {
+    fn to_srgb_alpha(&self) -> Result<SrgbAlpha<T>> {
         let sg = Srgb::gamma_encode(self.grey);
         SrgbAlpha::new(sg, sg, sg, T::one())
     }
 
-    fn to_xyz(&self) -> Xyz<T> {
+    fn to_xyz(&self) -> Result<Xyz<T>> {
         // Grey in XYZ space with D65 reference white
         // For greyscale, X, Y, and Z values are proportional to the reference white
         // Y (luminance) equals grey value, and X and Z are scaled according to D65
 
         // Simplified approach: use the luminance (Y) value directly,
         // and scale X and Z based on D65 reference white
-        let white = Xyz::<T>::d65_reference_white();
+        let white = Xyz::<T>::d65_reference_white()?;
 
         // Scale all values by the grey value (luminance)
         let x = white.x() * self.grey();
@@ -168,8 +186,8 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
         Xyz::new(x, y, z)
     }
 
-    fn to_xyz_alpha(&self) -> XyzAlpha<T> {
-        let xyz = self.to_xyz();
+    fn to_xyz_alpha(&self) -> Result<XyzAlpha<T>> {
+        let xyz = self.to_xyz()?;
         XyzAlpha::new(xyz.x(), xyz.y(), xyz.z(), T::one())
     }
 }

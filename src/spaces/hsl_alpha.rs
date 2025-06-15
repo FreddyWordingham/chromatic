@@ -5,8 +5,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, GreyAlpha, Hsl, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    error::{ChromaticError, Result},
     impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
+    spaces::{Grey, GreyAlpha, Hsl, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// HSL with alpha channel.
@@ -20,24 +22,32 @@ pub struct HslAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> HslAlpha<T> {
     /// Create a new `HslAlpha` instance.
-    pub fn new(hue: T, saturation: T, lightness: T, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self {
-            colour: Hsl::new(hue, saturation, lightness),
+    pub fn new(hue: T, saturation: T, lightness: T, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self {
+            colour: Hsl::new(hue, saturation, lightness)?,
             alpha,
-        }
+        })
     }
 
     /// Create a new `HslAlpha` instance from a `Hsl` colour and an alpha component.
-    fn new_colour_with_alpha(colour: Hsl<T>, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self { colour, alpha }
+    fn new_colour_with_alpha(colour: Hsl<T>, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+
+        Ok(Self { colour, alpha })
+    }
+
+    /// Validate a single component is in range [0, 1].
+    fn validate_component(value: T, name: &str) -> Result<()> {
+        if value < T::zero() || value > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "{} component ({}) must be between 0 and 1",
+                name,
+                value.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the base `colour`.
@@ -66,27 +76,25 @@ impl<T: Float + Send + Sync> HslAlpha<T> {
     }
 
     /// Set the `hue` component.
-    pub fn set_hue(&mut self, hue: T) {
-        self.colour.set_hue(hue);
+    pub fn set_hue(&mut self, hue: T) -> Result<()> {
+        self.colour.set_hue(hue)
     }
 
     /// Set the `saturation` component.
-    pub fn set_saturation(&mut self, saturation: T) {
-        self.colour.set_saturation(saturation);
+    pub fn set_saturation(&mut self, saturation: T) -> Result<()> {
+        self.colour.set_saturation(saturation)
     }
 
     /// Set the `lightness` component.
-    pub fn set_lightness(&mut self, lightness: T) {
-        self.colour.set_lightness(lightness);
+    pub fn set_lightness(&mut self, lightness: T) -> Result<()> {
+        self.colour.set_lightness(lightness)
     }
 
     /// Set the `alpha` component.
-    pub fn set_alpha(&mut self, alpha: T) {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
+    pub fn set_alpha(&mut self, alpha: T) -> Result<()> {
+        Self::validate_component(alpha, "alpha")?;
         self.alpha = alpha;
+        Ok(())
     }
 }
 

@@ -5,8 +5,10 @@ use num_traits::Float;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    Colour, Convert, Grey, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha,
+    error::{ChromaticError, Result},
     impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
+    spaces::{Grey, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::{Colour, Convert},
 };
 
 /// Grey with alpha channel.
@@ -20,24 +22,30 @@ pub struct GreyAlpha<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> GreyAlpha<T> {
     /// Create a new `GreyAlpha` instance.
-    pub fn new(grey: T, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self {
-            colour: Grey::new(grey),
+    pub fn new(grey: T, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+        Ok(Self {
+            colour: Grey::new(grey)?,
             alpha,
-        }
+        })
     }
 
     /// Create a new `GreyAlpha` instance from a `Grey` colour and an alpha component.
-    fn new_colour_with_alpha(colour: Grey<T>, alpha: T) -> Self {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
-        Self { colour, alpha }
+    fn new_colour_with_alpha(colour: Grey<T>, alpha: T) -> Result<Self> {
+        Self::validate_component(alpha, "alpha")?;
+        Ok(Self { colour, alpha })
+    }
+
+    /// Validate a single component is in range [0, 1].
+    fn validate_component(value: T, name: &str) -> Result<()> {
+        if value < T::zero() || value > T::one() {
+            return Err(ChromaticError::InvalidColour(format!(
+                "{} component ({}) must be between 0 and 1",
+                name,
+                value.to_f64().unwrap_or(f64::NAN)
+            )));
+        }
+        Ok(())
     }
 
     /// Get the base `colour`.
@@ -56,21 +64,16 @@ impl<T: Float + Send + Sync> GreyAlpha<T> {
     }
 
     /// Set the `grey` component.
-    pub fn set_grey(&mut self, grey: T) {
-        debug_assert!(
-            grey >= T::zero() && grey <= T::one(),
-            "Grey component must be in range [0, 1]."
-        );
-        self.colour.set_grey(grey);
+    pub fn set_grey(&mut self, grey: T) -> Result<()> {
+        Self::validate_component(grey, "grey")?;
+        self.colour.set_grey(grey)
     }
 
     /// Set the `alpha` component.
-    pub fn set_alpha(&mut self, alpha: T) {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
+    pub fn set_alpha(&mut self, alpha: T) -> Result<()> {
+        Self::validate_component(alpha, "alpha")?;
         self.alpha = alpha;
+        Ok(())
     }
 }
 
