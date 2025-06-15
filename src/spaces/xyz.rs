@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -86,7 +86,7 @@ impl<T: Float + Send + Sync> Xyz<T> {
     ///
     /// This function will not panic.
     pub fn d65_reference_white() -> Result<Self> {
-        Self::new(T::from(0.95047).unwrap(), T::from(1.0).unwrap(), T::from(1.08883).unwrap())
+        Self::new(safe_constant(0.95047)?, safe_constant(1.0)?, safe_constant(1.08883)?)
     }
 
     /// Create an XYZ colour representing the D50 standard illuminant (horizon light, 5003K).
@@ -95,7 +95,7 @@ impl<T: Float + Send + Sync> Xyz<T> {
     ///
     /// This function will not panic.
     pub fn d50_reference_white() -> Result<Self> {
-        Self::new(T::from(0.96422).unwrap(), T::from(1.0).unwrap(), T::from(0.82521).unwrap())
+        Self::new(safe_constant(0.96422)?, safe_constant(1.0)?, safe_constant(0.82521)?)
     }
 
     /// Get XYZ values relative to D65 reference white.
@@ -190,35 +190,35 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
 
     fn to_lab(&self) -> Result<Lab<T>> {
         // Constants for the conversion
-        let epsilon = T::from(0.008_856).unwrap(); // Intent is 216/24389
-        let kappa = T::from(903.3).unwrap(); // Intent is 24389/27
+        let epsilon = safe_constant(0.008_856)?; // Intent is 216/24389
+        let kappa = safe_constant::<f64, T>(903.3)?; // Intent is 24389/27
 
         // Get XYZ values relative to reference white (D65)
         let (x_r, y_r, z_r) = self.relative_to_white()?;
 
         // Compute f(x), f(y), f(z)
         let f_x = if x_r > epsilon {
-            x_r.powf(T::from(1.0 / 3.0).unwrap())
+            x_r.powf(safe_constant(1.0 / 3.0)?)
         } else {
-            (kappa * x_r + T::from(16.0).unwrap()) / T::from(116.0).unwrap()
+            (kappa * x_r + safe_constant(16.0)?) / safe_constant(116.0)?
         };
 
         let f_y = if y_r > epsilon {
-            y_r.powf(T::from(1.0 / 3.0).unwrap())
+            y_r.powf(safe_constant(1.0 / 3.0)?)
         } else {
-            (kappa * y_r + T::from(16.0).unwrap()) / T::from(116.0).unwrap()
+            (kappa * y_r + safe_constant(16.0)?) / safe_constant(116.0)?
         };
 
         let f_z = if z_r > epsilon {
-            z_r.powf(T::from(1.0 / 3.0).unwrap())
+            z_r.powf(safe_constant(1.0 / 3.0)?)
         } else {
-            (kappa * z_r + T::from(16.0).unwrap()) / T::from(116.0).unwrap()
+            (kappa * z_r + safe_constant(16.0)?) / safe_constant(116.0)?
         };
 
         // Compute Lab components
-        let l = T::from(116.0).unwrap() * f_y - T::from(16.0).unwrap();
-        let a = T::from(500.0).unwrap() * (f_x - f_y);
-        let b = T::from(200.0).unwrap() * (f_y - f_z);
+        let l = safe_constant::<f64, T>(116.0)? * f_y - safe_constant(16.0)?;
+        let a = safe_constant::<f64, T>(500.0)? * (f_x - f_y);
+        let b = safe_constant::<f64, T>(200.0)? * (f_y - f_z);
 
         Lab::new(l, a, b)
     }
@@ -231,16 +231,14 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
     fn to_rgb(&self) -> Result<Rgb<T>> {
         // XYZ to linear RGB transformation
         // Using the inverse of the RGB to XYZ matrix
-        let r = self.x * T::from(3.240_454_2).unwrap()
-            - self.y * T::from(1.537_138_5).unwrap()
-            - self.z * T::from(0.498_531_4).unwrap();
+        let r =
+            self.x * safe_constant(3.240_454_2)? - self.y * safe_constant(1.537_138_5)? - self.z * safe_constant(0.498_531_4)?;
 
-        let g = -self.x * T::from(0.969_266_0).unwrap()
-            + self.y * T::from(1.876_010_8).unwrap()
-            + self.z * T::from(0.041_556_0).unwrap();
+        let g =
+            -self.x * safe_constant(0.969_266_0)? + self.y * safe_constant(1.876_010_8)? + self.z * safe_constant(0.041_556_0)?;
 
-        let b = self.x * T::from(0.055_643_4).unwrap() - self.y * T::from(0.204_025_9).unwrap()
-            + self.z * T::from(1.057_225_2).unwrap();
+        let b =
+            self.x * safe_constant(0.055_643_4)? - self.y * safe_constant(0.204_025_9)? + self.z * safe_constant(1.057_225_2)?;
 
         // Clamp to [0, 1] range
         let clamped_r = r.max(T::zero()).min(T::one());
@@ -284,7 +282,7 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
 impl<T: Float + Send + Sync> Display for Xyz<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let max = T::from(255_i32).unwrap();
+        let max = safe_constant(255_i32)?;
         let red = (rgb.red() * max).round().to_u8().unwrap();
         let green = (rgb.green() * max).round().to_u8().unwrap();
         let blue = (rgb.blue() * max).round().to_u8().unwrap();

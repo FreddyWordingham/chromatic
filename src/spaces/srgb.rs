@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -92,10 +92,10 @@ impl<T: Float + Send + Sync> Srgb<T> {
     ///
     /// This function will not panic.
     pub fn gamma_encode(linear: T) -> Result<T> {
-        Ok(if linear <= T::from(0.003_130_8).unwrap() {
-            T::from(12.92).unwrap() * linear
+        Ok(if linear <= safe_constant(0.003_130_8)? {
+            safe_constant::<f64, T>(12.92)? * linear
         } else {
-            T::from(1.055).unwrap() * linear.powf(T::from(1.0 / 2.4).unwrap()) - T::from(0.055).unwrap()
+            safe_constant::<f64, T>(1.055)? * linear.powf(safe_constant(1.0 / 2.4)?) - safe_constant(0.055)?
         })
     }
 
@@ -107,12 +107,12 @@ impl<T: Float + Send + Sync> Srgb<T> {
     /// # Panics
     ///
     /// This function will not panic.
-    pub fn gamma_decode(srgb: T) -> T {
-        if srgb <= T::from(0.04045).unwrap() {
-            srgb / T::from(12.92).unwrap()
+    pub fn gamma_decode(srgb: T) -> Result<T> {
+        Ok(if srgb <= safe_constant::<f64, T>(0.04045)? {
+            srgb / safe_constant(12.92)?
         } else {
-            ((srgb + T::from(0.055).unwrap()) / T::from(1.055).unwrap()).powf(T::from(2.4).unwrap())
-        }
+            ((srgb + safe_constant(0.055)?) / safe_constant(1.055)?).powf(safe_constant(2.4)?)
+        })
     }
 }
 
@@ -139,16 +139,16 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
                 let scaled_green = T::from(green)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
                 let scaled_blue = T::from(blue)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
 
                 (scaled_red, scaled_green, scaled_blue)
             }
@@ -169,13 +169,13 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
                     .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex blue: {e}")))?;
 
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
                 let scaled_green = T::from(green)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
                 let scaled_blue = T::from(blue)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
 
                 (scaled_red, scaled_green, scaled_blue)
             }
@@ -185,7 +185,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
     }
 
     fn to_hex(&self) -> Result<String> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.green * max).round().to_u8().unwrap();
         let blue = (self.blue * max).round().to_u8().unwrap();
@@ -193,7 +193,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = T::from(bytes[0]).unwrap() / max;
         let green = T::from(bytes[1]).unwrap() / max;
         let blue = T::from(bytes[2]).unwrap() / max;
@@ -201,7 +201,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
     }
 
     fn to_bytes(self) -> Result<[u8; 3]> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.green * max).round().to_u8().unwrap();
         let blue = (self.blue * max).round().to_u8().unwrap();
@@ -233,13 +233,13 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
         // For perceptually correct greyscale, use the luminance formula
         // Y = 0.2126*R + 0.7152*G + 0.0722*B (same as in XYZ conversion)
         // This applies to gamma-encoded (non-linear) sRGB values
-        let r_linear = Self::gamma_decode(self.red);
-        let g_linear = Self::gamma_decode(self.green);
-        let b_linear = Self::gamma_decode(self.blue);
+        let r_linear = Self::gamma_decode(self.red)?;
+        let g_linear = Self::gamma_decode(self.green)?;
+        let b_linear = Self::gamma_decode(self.blue)?;
 
-        let y_linear = r_linear * T::from(0.212_672_9).unwrap()
-            + g_linear * T::from(0.715_152_2).unwrap()
-            + b_linear * T::from(0.072_175_0).unwrap();
+        let y_linear = r_linear * safe_constant(0.212_672_9)?
+            + g_linear * safe_constant(0.715_152_2)?
+            + b_linear * safe_constant(0.072_175_0)?;
 
         // Keep in linear space for Grey, as Grey is a linear space
         Grey::new(y_linear)
@@ -282,9 +282,9 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
 
     fn to_rgb(&self) -> Result<Rgb<T>> {
         // Convert from gamma-encoded sRGB to linear RGB
-        let r_linear = Self::gamma_decode(self.red);
-        let g_linear = Self::gamma_decode(self.green);
-        let b_linear = Self::gamma_decode(self.blue);
+        let r_linear = Self::gamma_decode(self.red)?;
+        let g_linear = Self::gamma_decode(self.green)?;
+        let b_linear = Self::gamma_decode(self.blue)?;
 
         Rgb::new(r_linear, g_linear, b_linear)
     }
@@ -315,7 +315,7 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
 
 impl<T: Float + Send + Sync> Display for Srgb<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let max = T::from(255_i32).unwrap();
+        let max = safe_constant(255_i32)?;
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.green * max).round().to_u8().unwrap();
         let blue = (self.blue * max).round().to_u8().unwrap();

@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -135,16 +135,16 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
                 let scaled_green = T::from(green)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
                 let scaled_blue = T::from(blue)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap();
+                    * safe_constant(17)?
+                    / safe_constant(255)?;
 
                 (scaled_red, scaled_green, scaled_blue)
             }
@@ -165,13 +165,13 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
                     .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex blue: {e}")))?;
 
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
                 let scaled_green = T::from(green)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
                 let scaled_blue = T::from(blue)
                     .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    / T::from(255).unwrap();
+                    / safe_constant(255)?;
 
                 (scaled_red, scaled_green, scaled_blue)
             }
@@ -181,7 +181,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
     }
 
     fn to_hex(&self) -> Result<String> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.green * max).round().to_u8().unwrap();
         let blue = (self.blue * max).round().to_u8().unwrap();
@@ -189,7 +189,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = T::from(bytes[0]).unwrap() / max;
         let green = T::from(bytes[1]).unwrap() / max;
         let blue = T::from(bytes[2]).unwrap() / max;
@@ -197,7 +197,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
     }
 
     fn to_bytes(self) -> Result<[u8; 3]> {
-        let max = T::from(255_u8).unwrap();
+        let max = safe_constant(255_u8)?;
         let red = (self.red * max).round().to_u8().unwrap();
         let green = (self.green * max).round().to_u8().unwrap();
         let blue = (self.blue * max).round().to_u8().unwrap();
@@ -223,11 +223,11 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
 
 impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
     fn to_grey(&self) -> Result<Grey<T>> {
-        Grey::new((self.red + self.green + self.blue) / T::from(3.0).unwrap())
+        Grey::new((self.red + self.green + self.blue) / safe_constant(3.0)?)
     }
 
     fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
-        GreyAlpha::new((self.red + self.green + self.blue) / T::from(3.0).unwrap(), T::one())
+        GreyAlpha::new((self.red + self.green + self.blue) / safe_constant(3.0)?, T::one())
     }
 
     fn to_hsl(&self) -> Result<Hsl<T>> {
@@ -240,7 +240,7 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
         let delta = max - min;
 
         // Calculate lightness
-        let lightness = (max + min) / T::from(2.0).unwrap();
+        let lightness = (max + min) / safe_constant(2.0)?;
 
         // If max equals min, the color is a shade of gray (no hue or saturation)
         if delta.abs() < T::epsilon() {
@@ -248,48 +248,51 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
         }
 
         // Calculate saturation
-        let saturation = if lightness <= T::from(0.5).unwrap() {
+        let saturation = if lightness <= safe_constant(0.5)? {
             delta / (max + min)
         } else {
-            delta / (T::from(2.0).unwrap() - max - min)
+            delta / (safe_constant::<f64, T>(2.0)? - max - min)
         };
+
+        // Constants
+        let f360 = safe_constant(360.0)?;
 
         // Calculate hue
         let hue = if r.abs_sub(max).abs() < T::epsilon() {
             // Red is max
             let segment = (g - b) / delta;
             let shift = T::zero();
-            let segment_6 = segment / T::from(6.0).unwrap();
+            let segment_6 = segment / safe_constant(6.0)?;
 
             // If green is less than blue, add 1.0 (360 degrees)
             if g < b {
-                T::from(360.0).unwrap() + shift + segment_6 * T::from(360.0).unwrap()
+                f360 + shift + segment_6 * f360
             } else {
-                shift + segment_6 * T::from(360.0).unwrap()
+                shift + segment_6 * f360
             }
         } else if g.abs_sub(max).abs() < T::epsilon() {
             // Green is max
             let segment = (b - r) / delta;
-            let shift = T::from(1.0 / 3.0).unwrap();
-            let segment_6 = segment / T::from(6.0).unwrap();
+            let shift = safe_constant::<f64, T>(1.0 / 3.0)?;
+            let segment_6 = segment / safe_constant(6.0)?;
 
-            shift + segment_6 * T::from(360.0).unwrap()
+            shift + segment_6 * f360
         } else {
             // Blue is max
             let segment = (r - g) / delta;
-            let shift = T::from(2.0 / 3.0).unwrap();
-            let segment_6 = segment / T::from(6.0).unwrap();
+            let shift = safe_constant::<f64, T>(2.0 / 3.0)?;
+            let segment_6 = segment / safe_constant(6.0)?;
 
-            shift + segment_6 * T::from(360.0).unwrap()
+            shift + segment_6 * f360
         };
 
         // Make sure hue is in the range [0, 360)
         let mut normalized_hue = hue;
-        while normalized_hue >= T::from(360.0).unwrap() {
-            normalized_hue = normalized_hue - T::from(360.0).unwrap();
+        while normalized_hue >= f360 {
+            normalized_hue = normalized_hue - f360;
         }
         while normalized_hue < T::zero() {
-            normalized_hue = normalized_hue + T::from(360.0).unwrap();
+            normalized_hue = normalized_hue + f360;
         }
 
         Hsl::new(normalized_hue, saturation, lightness)
@@ -312,10 +315,10 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
         let value = max;
 
         let zero = T::zero();
-        let sixty = T::from(60.0).unwrap();
-        let two = T::from(2.0).unwrap();
-        let four = T::from(4.0).unwrap();
-        let six = T::from(6.0).unwrap();
+        let sixty = safe_constant(60.0)?;
+        let two = safe_constant(2.0)?;
+        let four = safe_constant(4.0)?;
+        let six = safe_constant(6.0)?;
 
         let saturation = if max == zero { zero } else { delta / max };
 
@@ -376,17 +379,17 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
     fn to_xyz(&self) -> Result<Xyz<T>> {
         // Convert linear RGB to XYZ using the standard sRGB transform matrix
         // This matrix is for D65 reference white
-        let x = self.red() * T::from(0.412_456_4).unwrap()
-            + self.green() * T::from(0.357_576_1).unwrap()
-            + self.blue() * T::from(0.180_437_5).unwrap();
+        let x = self.red() * safe_constant(0.412_456_4)?
+            + self.green() * safe_constant(0.357_576_1)?
+            + self.blue() * safe_constant(0.180_437_5)?;
 
-        let y = self.red() * T::from(0.212_672_9).unwrap()
-            + self.green() * T::from(0.715_152_2).unwrap()
-            + self.blue() * T::from(0.072_175_0).unwrap();
+        let y = self.red() * safe_constant(0.212_672_9)?
+            + self.green() * safe_constant(0.715_152_2)?
+            + self.blue() * safe_constant(0.072_175_0)?;
 
-        let z = self.red() * T::from(0.019_333_9).unwrap()
-            + self.green() * T::from(0.119_192_0).unwrap()
-            + self.blue() * T::from(0.950_304_1).unwrap();
+        let z = self.red() * safe_constant(0.019_333_9)?
+            + self.green() * safe_constant(0.119_192_0)?
+            + self.blue() * safe_constant(0.950_304_1)?;
 
         Xyz::new(x, y, z)
     }

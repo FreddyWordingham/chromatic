@@ -14,7 +14,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -145,13 +145,13 @@ impl<T: Float + Send + Sync> Lab<T> {
     /// # Panics
     ///
     /// This function will not panic.
-    pub fn delta_e94(&self, other: &Self) -> T {
+    pub fn delta_e94(&self, other: &Self) -> Result<T> {
         // Weighting factors
         let k_l = T::one();
         let k_c = T::one();
         let k_h = T::one();
-        let k1 = T::from(0.045).unwrap();
-        let k2 = T::from(0.015).unwrap();
+        let k1 = safe_constant::<f64, T>(0.045)?;
+        let k2 = safe_constant::<f64, T>(0.015)?;
 
         // Calculate differences
         let delta_l = self.lightness - other.lightness;
@@ -183,7 +183,7 @@ impl<T: Float + Send + Sync> Lab<T> {
         let term2 = (delta_c / (k_c * s_c)).powi(2);
         let term3 = (delta_h / (k_h * s_h)).powi(2);
 
-        (term1 + term2 + term3).sqrt()
+        Ok((term1 + term2 + term3).sqrt())
     }
 }
 
@@ -233,12 +233,12 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
     fn to_grey(&self) -> Result<Grey<T>> {
         // For greyscale, we should just use the L component (lightness)
         // We need to normalize from [0, 100] to [0, 1]
-        let l_normalized = self.lightness / T::from(100.0).unwrap();
+        let l_normalized = self.lightness / safe_constant(100.0)?;
         Grey::new(l_normalized)
     }
 
     fn to_grey_alpha(&self) -> Result<GreyAlpha<T>> {
-        let l_normalized = self.lightness / T::from(100.0).unwrap();
+        let l_normalized = self.lightness / safe_constant(100.0)?;
         GreyAlpha::new(l_normalized, T::one())
     }
 
@@ -291,29 +291,29 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
 
     fn to_xyz(&self) -> Result<Xyz<T>> {
         // Constants for the conversion
-        let epsilon = T::from(0.008_856).unwrap(); // Intent is 216/24389
-        let kappa = T::from(903.3).unwrap(); // Intent is 24389/27
+        let epsilon = safe_constant(0.008_856)?; // Intent is 216/24389
+        let kappa = safe_constant(903.3)?; // Intent is 24389/27
 
         // D65 reference white
         let ref_white = Xyz::<T>::d65_reference_white()?;
 
         // Compute f_y
         let l = self.lightness;
-        let f_y = (l + T::from(16.0).unwrap()) / T::from(116.0).unwrap();
+        let f_y = (l + safe_constant(16.0)?) / safe_constant(116.0)?;
 
         // Compute f_x and f_z using a and b
-        let f_x = self.a_star / T::from(500.0).unwrap() + f_y;
-        let f_z = f_y - self.b_star / T::from(200.0).unwrap();
+        let f_x = self.a_star / safe_constant(500.0)? + f_y;
+        let f_z = f_y - self.b_star / safe_constant(200.0)?;
 
         // Convert f values to XYZ coordinates
         let x_r = if f_x.powi(3) > epsilon {
             f_x.powi(3)
         } else {
-            (f_x * T::from(116.0).unwrap() - T::from(16.0).unwrap()) / kappa
+            (f_x * safe_constant(116.0)? - safe_constant(16.0)?) / kappa
         };
 
-        let y_r = if l > T::from(8.0).unwrap() {
-            ((l + T::from(16.0).unwrap()) / T::from(116.0).unwrap()).powi(3)
+        let y_r = if l > safe_constant(8.0)? {
+            ((l + safe_constant(16.0)?) / safe_constant(116.0)?).powi(3)
         } else {
             l / kappa
         };
@@ -321,7 +321,7 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
         let z_r = if f_z.powi(3) > epsilon {
             f_z.powi(3)
         } else {
-            (f_z * T::from(116.0).unwrap() - T::from(16.0).unwrap()) / kappa
+            (f_z * safe_constant(116.0)? - safe_constant(16.0)?) / kappa
         };
 
         // Scale by reference white

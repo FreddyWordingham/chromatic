@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, NumericError, Result, safe_constant},
     spaces::{GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -66,18 +66,18 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
             // Short form: #G
             1 => {
                 let value = u8::from_str_radix(components, 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {e}")))?;
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
                 // Expand short form (e.g., #F becomes #FF)
                 T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
-                    * T::from(17).unwrap()
-                    / T::from(255).unwrap()
+                    * safe_constant(17.0)?
+                    / safe_constant(255.0)?
             }
             // Long form: #GG
             2 => {
                 let value = u8::from_str_radix(components, 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex value: {e}")))?;
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex value: {err}")))?;
                 T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
-                    / T::from(255).unwrap()
+                    / safe_constant(255.0)?
             }
             _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
         };
@@ -85,20 +85,35 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
     }
 
     fn to_hex(&self) -> Result<String> {
-        let max = T::from(255_i32).unwrap();
-        let grey = (self.grey * max).round().to_u8().unwrap();
+        let max: T = safe_constant::<i32, T>(255_i32)?;
+        let scaled = (self.grey * max).round();
+        let grey = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: std::any::type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Grey value {} is outside u8 range [0, 255]",
+                scaled.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
         Ok(format!("#{grey:02X}"))
     }
-
     fn from_bytes(bytes: [u8; 1]) -> Result<Self> {
-        let max = T::from(255_u8).unwrap();
-        let value = T::from(bytes[0]).unwrap() / max;
+        let max = safe_constant::<u8, T>(255_u8)?;
+        let value = safe_constant::<u8, T>(bytes[0])? / max;
         Self::new(value)
     }
 
     fn to_bytes(self) -> Result<[u8; 1]> {
-        let max = T::from(255_u8).unwrap();
-        let value = (self.grey * max).round().to_u8().unwrap();
+        let max: T = safe_constant::<u8, T>(255_u8)?;
+        let scaled = (self.grey * max).round();
+        let value = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: std::any::type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Grey value {} is outside u8 range [0, 255]",
+                scaled.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
         Ok([value])
     }
 
@@ -194,7 +209,7 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
 
 impl<T: Float + Send + Sync> Display for Grey<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let max = T::from(255_i32).unwrap();
+        let max = safe_constant(255_i32)?;
         let value = (self.grey * max).round().to_u8().unwrap();
         write!(fmt, "\x1b[38;2;{value};{value};{value}m{PRINT_BLOCK}\x1b[0m")
     }

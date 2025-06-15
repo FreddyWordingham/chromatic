@@ -105,7 +105,7 @@ impl<T: Float + Send + Sync> LabAlpha<T> {
 
     /// Calculate perceptual color difference using the improved CIE94 Delta E formula,
     /// ignoring the alpha channel.
-    pub fn delta_e94(&self, other: &Self) -> T {
+    pub fn delta_e94(&self, other: &Self) -> Result<T> {
         self.colour.delta_e94(&other.colour)
     }
 }

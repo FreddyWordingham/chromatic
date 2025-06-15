@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -42,7 +42,7 @@ impl<T: Float + Send + Sync> Hsv<T> {
 
     /// Normalize hue to be within [0, 360) range.
     fn normalize_hue(mut hue: T) -> Result<T> {
-        let f360 = T::from(360.0).ok_or_else(|| ChromaticError::Math("Failed to convert 360.0 to target type".to_string()))?;
+        let f360 = safe_constant(360.0)?;
 
         // Handle potential infinite loops by limiting iterations
         let mut iterations = 0;
@@ -185,8 +185,8 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Hsv<T> {
         let mut hue_diff = rhs.hue - lhs.hue;
 
         // If the difference is greater than 180 degrees, it's shorter to go the other way around the color wheel
-        let f180 = T::from(180.0).unwrap_or_else(|| T::zero());
-        let f360 = T::from(360.0).unwrap_or_else(|| T::one());
+        let f180 = safe_constant::<u32, T>(180)?;
+        let f360 = safe_constant::<u32, T>(360)?;
 
         if hue_diff > f180 {
             hue_diff = hue_diff - f360;
@@ -225,18 +225,18 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         let hue = self.hue;
 
         // Calculate lightness based on value and saturation
-        let lightness = self.value * (T::one() - self.saturation / T::from(2.0).unwrap());
+        let lightness = self.value * (T::one() - self.saturation / safe_constant(2.0)?);
 
         // Calculate saturation for HSL
         let saturation = if lightness.abs() < T::epsilon() || (lightness - T::one()).abs() < T::epsilon() {
             // If lightness is 0 or 1, saturation is 0
             T::zero()
         } else {
-            let min_val = lightness * T::from(2.0).unwrap() - T::one();
+            let min_val = lightness * safe_constant(2.0)? - T::one();
             let max_val = min_val + self.saturation * (T::one() - min_val.abs());
 
             // Calculate HSL saturation from min and max values
-            (max_val - min_val) / (T::one() - (T::from(2.0).unwrap() * lightness - T::one()).abs())
+            (max_val - min_val) / (T::one() - (safe_constant::<f64, T>(2.0)? * lightness - T::one()).abs())
         };
 
         Hsl::new(hue, saturation, lightness)
@@ -271,19 +271,19 @@ impl<T: Float + Send + Sync> Convert<T> for Hsv<T> {
         let v = self.value;
 
         let c = v * s;
-        let h_prime = h / T::from(60.0).unwrap();
-        let x = c * (T::one() - ((h_prime % T::from(2.0).unwrap()) - T::one()).abs());
+        let h_prime = h / safe_constant(60.0)?;
+        let x = c * (T::one() - ((h_prime % safe_constant(2.0)?) - T::one()).abs());
         let m = v - c;
 
-        let (r, g, b) = if h < T::from(60.0).unwrap() {
+        let (r, g, b) = if h < safe_constant(60.0)? {
             (c, x, T::zero())
-        } else if h < T::from(120.0).unwrap() {
+        } else if h < safe_constant(120.0)? {
             (x, c, T::zero())
-        } else if h < T::from(180.0).unwrap() {
+        } else if h < safe_constant(180.0)? {
             (T::zero(), c, x)
-        } else if h < T::from(240.0).unwrap() {
+        } else if h < safe_constant(240.0)? {
             (T::zero(), x, c)
-        } else if h < T::from(300.0).unwrap() {
+        } else if h < safe_constant(300.0)? {
             (x, T::zero(), c)
         } else {
             (c, T::zero(), x)

@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result},
+    error::{ChromaticError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -157,19 +157,23 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Hsl<T> {
         // For hue, we need special handling to ensure we take the shortest path around the color wheel
         let mut hue_diff = rhs.hue - lhs.hue;
 
+        // Constants
+        let f180 = safe_constant::<u32, T>(180)?;
+        let f360 = safe_constant::<u32, T>(360)?;
+
         // If the difference is greater than 180 degrees, it's shorter to go the other way around the color wheel
-        if hue_diff > T::from(180).unwrap() {
-            hue_diff = hue_diff - T::from(360).unwrap();
-        } else if hue_diff < T::from(-180).unwrap() {
-            hue_diff = hue_diff + T::from(360).unwrap();
+        if hue_diff > f180 {
+            hue_diff = hue_diff - f360;
+        } else if hue_diff < -f180 {
+            hue_diff = hue_diff + f360;
         }
 
         // Calculate the interpolated hue and ensure it stays in [0, 360] range
         let mut hue = lhs.hue + t * hue_diff;
         if hue < T::zero() {
-            hue = hue + T::from(360).unwrap();
-        } else if hue > T::from(360).unwrap() {
-            hue = hue - T::from(360).unwrap();
+            hue = hue + f360;
+        } else if hue > f360 {
+            hue = hue - f360;
         }
 
         // Linear interpolation for saturation and lightness
@@ -199,8 +203,8 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
 
     fn to_hsv(&self) -> Result<Hsv<T>> {
         // v = L + S_l * min(L, 1-L)
-        let delta =
-            self.saturation * (T::one() - (T::from(2.0).unwrap() * self.lightness - T::one()).abs()) / T::from(2.0).unwrap();
+        let delta = self.saturation * (T::one() - (safe_constant::<f64, T>(2.0)? * self.lightness - T::one()).abs())
+            / safe_constant(2.0)?;
         let mut v = self.lightness + delta;
         // clamp v to [0,1]
         if v < T::zero() {
@@ -240,10 +244,10 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
         }
 
         // Helper function for HSL to RGB conversion
-        let hue_to_rgb = |p: T, q: T, mut t: T| -> T {
-            let f6 = T::from(6.0).unwrap();
-            let f2 = T::from(2.0).unwrap();
-            let f3 = T::from(3.0).unwrap();
+        let hue_to_rgb = |p: T, q: T, mut t: T| -> Result<T> {
+            let f6 = safe_constant(6.0)?;
+            let f2 = safe_constant(2.0)?;
+            let f3 = safe_constant(3.0)?;
 
             // Normalize t to be in range [0, 1]
             if t < T::zero() {
@@ -254,29 +258,29 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
             }
 
             if t < T::one() / f6 {
-                return p + (q - p) * f6 * t;
+                return Ok(p + (q - p) * f6 * t);
             }
             if t < T::one() / f2 {
-                return q;
+                return Ok(q);
             }
             if t < f2 / f3 {
-                return p + (q - p) * (f2 / f3 - t) * f6;
+                return Ok(p + (q - p) * (f2 / f3 - t) * f6);
             }
-            p
+            Ok(p)
         };
 
-        let q = if lightness < T::from(0.5).unwrap() {
+        let q = if lightness < safe_constant(0.5)? {
             lightness * (T::one() + saturation)
         } else {
             lightness + saturation - lightness * saturation
         };
 
-        let p = T::from(2.0).unwrap() * lightness - q;
-        let h = self.hue / T::from(360.0).unwrap();
+        let p = safe_constant::<f64, T>(2.0)? * lightness - q;
+        let h = self.hue / safe_constant(360.0)?;
 
-        let r = hue_to_rgb(p, q, h + T::from(1.0 / 3.0).unwrap());
-        let g = hue_to_rgb(p, q, h);
-        let b = hue_to_rgb(p, q, h - T::from(1.0 / 3.0).unwrap());
+        let r = hue_to_rgb(p, q, h + safe_constant(1.0 / 3.0)?)?;
+        let g = hue_to_rgb(p, q, h)?;
+        let b = hue_to_rgb(p, q, h - safe_constant(1.0 / 3.0)?)?;
 
         Rgb::new(r, g, b)
     }
@@ -315,7 +319,7 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
 impl<T: Float + Send + Sync> Display for Hsl<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let max = T::from(255_i32).unwrap();
+        let max = safe_constant(255_i32)?;
         let red = (rgb.red() * max).round().to_u8().unwrap();
         let green = (rgb.green() * max).round().to_u8().unwrap();
         let blue = (rgb.blue() * max).round().to_u8().unwrap();
