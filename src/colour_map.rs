@@ -12,7 +12,40 @@ use terminal_size::{Width, terminal_size};
 use crate::{
     Colour,
     error::{ColourMapError, Result, safe_constant, validate_interpolation_factor},
+    spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
 };
+
+// Type aliases for easier usage
+/// Monochrome (Grey) colour map.
+pub type GreyMap<T> = ColourMap<Grey<T>, T, 1>;
+/// Hue, Saturation, Lightness colour map.
+pub type HslMap<T> = ColourMap<Hsl<T>, T, 3>;
+/// Hue, Saturation, Value colour map.
+pub type HsvMap<T> = ColourMap<Hsv<T>, T, 3>;
+/// CIE L*a*b* colour map.
+pub type LabMap<T> = ColourMap<Lab<T>, T, 3>;
+/// Red, Green, Blue colour map.
+pub type RgbMap<T> = ColourMap<Rgb<T>, T, 3>;
+/// Linear RGB colour map.
+pub type SrgbMap<T> = ColourMap<Srgb<T>, T, 3>;
+/// CIE XYZ colour map.
+pub type XyzMap<T> = ColourMap<Xyz<T>, T, 3>;
+
+// Alpha variants
+/// Monochrome (Grey) colour map with alpha channel.
+pub type GreyAlphaMap<T> = ColourMap<GreyAlpha<T>, T, 2>;
+/// Hue, Saturation, Lightness colour map with alpha channel.
+pub type HslAlphaMap<T> = ColourMap<HslAlpha<T>, T, 4>;
+/// Hue, Saturation, Value colour map with alpha channel.
+pub type HsvAlphaMap<T> = ColourMap<HsvAlpha<T>, T, 4>;
+/// CIE L*a*b* colour map with alpha channel.
+pub type LabAlphaMap<T> = ColourMap<LabAlpha<T>, T, 4>;
+/// Red, Green, Blue colour map with alpha channel.
+pub type RgbAlphaMap<T> = ColourMap<RgbAlpha<T>, T, 4>;
+/// Linear RGB colour map with alpha channel.
+pub type SrgbAlphaMap<T> = ColourMap<SrgbAlpha<T>, T, 4>;
+/// CIE XYZ colour map with alpha channel.
+pub type XyzAlphaMap<T> = ColourMap<XyzAlpha<T>, T, 4>;
 
 /// A map of colours at specific positions, with interpolation between them.
 #[derive(Debug, Clone)]
@@ -48,6 +81,30 @@ where
 
         Ok(Self {
             colours: colours.to_vec(),
+            _phantom: PhantomData,
+        })
+    }
+
+    /// Construct a `ColourMap` from a vector of Hex strings.
+    ///
+    /// # Arguments
+    ///
+    /// * `hex_colours` - A vector of Hex strings representing colours.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The input vector is empty.
+    /// - Any Hex string is invalid.
+    pub fn from_hex(hex_colours: &[&str]) -> Result<Self> {
+        if hex_colours.is_empty() {
+            return Err(ColourMapError::EmptyColourMap.into());
+        }
+
+        let colours: Result<Vec<C>> = hex_colours.iter().map(|hex| C::from_hex(hex)).collect();
+
+        Ok(Self {
+            colours: colours?,
             _phantom: PhantomData,
         })
     }

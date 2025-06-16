@@ -81,7 +81,10 @@ mod error;
 mod spaces;
 mod traits;
 
-pub use colour_map::ColourMap;
+pub use colour_map::{
+    ColourMap, GreyAlphaMap, GreyMap, HslAlphaMap, HslMap, HsvAlphaMap, HsvMap, LabAlphaMap, LabMap, RgbAlphaMap, RgbMap,
+    SrgbAlphaMap, SrgbMap, XyzAlphaMap, XyzMap,
+};
 pub use error::ChromaticError;
 pub use spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha};
 pub use traits::{Colour, Convert};
