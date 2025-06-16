@@ -81,10 +81,15 @@ mod error;
 mod spaces;
 mod traits;
 
-pub use colour_map::{
-    ColourMap, GreyAlphaMap, GreyMap, HslAlphaMap, HslMap, HsvAlphaMap, HsvMap, LabAlphaMap, LabMap, RgbAlphaMap, RgbMap,
-    SrgbAlphaMap, SrgbMap, XyzAlphaMap, XyzMap,
-};
-pub use error::ChromaticError;
-pub use spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha};
-pub use traits::{Colour, Convert};
+pub mod prelude {
+    //! Prelude of commonly used types and traits in the `chromatic` crate.
+    pub use crate::{
+        colour_map::{
+            ColourMap, GreyAlphaMap, GreyMap, HslAlphaMap, HslMap, HsvAlphaMap, HsvMap, LabAlphaMap, LabMap, RgbAlphaMap,
+            RgbMap, SrgbAlphaMap, SrgbMap, XyzAlphaMap, XyzMap,
+        },
+        error::ChromaticError,
+        spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+        traits::{Colour, Convert},
+    };
+}

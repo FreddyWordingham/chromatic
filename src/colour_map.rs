@@ -10,9 +10,9 @@ use std::{
 use terminal_size::{Width, terminal_size};
 
 use crate::{
-    Colour,
     error::{ColourMapError, Result, safe_constant, validate_interpolation_factor},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
+    traits::Colour,
 };
 
 // Type aliases for easier usage
