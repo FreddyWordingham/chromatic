@@ -45,7 +45,7 @@ pub enum ChromaticError {
     /// - Missing '#' prefix in hex colours
     /// - Invalid colour component values in string format
     #[error("Colour parsing error: {0}")]
-    ColourParsing(String),
+    ColourParsing(#[from] ColourParsingError),
 
     /// Colour space conversion failure.
     ///
@@ -57,7 +57,7 @@ pub enum ChromaticError {
     /// - Mathematical operations that produce NaN or infinite values
     /// - Loss of precision during conversion chains
     #[error("Colour conversion error: {0}")]
-    ColourConversion(String),
+    ColourConversion(#[from] ConversionError),
 
     /// Invalid interpolation parameters or operation.
     ///
@@ -70,7 +70,7 @@ pub enum ChromaticError {
     /// - Mismatched colour array and weight array lengths
     /// - Negative weights in colour mixing
     #[error("Interpolation error: {0}")]
-    Interpolation(String),
+    Interpolation(#[from] InterpolationError),
 
     /// `ColourMap` construction or sampling failure.
     ///
@@ -83,7 +83,7 @@ pub enum ChromaticError {
     /// - Sampling positions outside [0, 1] range
     /// - Non-ascending position values in colour maps
     #[error("Colour map error: {0}")]
-    ColourMap(String),
+    ColourMap(#[from] ColourMapError),
 
     /// Mathematical computation error.
     ///
@@ -97,7 +97,7 @@ pub enum ChromaticError {
     /// - Invalid mathematical operations (division by zero, etc.)
     /// - Missing numeric bounds for custom float types
     #[error("Math error: {0}")]
-    Math(String),
+    Math(#[from] NumericError),
 
     /// Terminal or display formatting error.
     ///
@@ -115,44 +115,13 @@ pub enum ChromaticError {
 /// Result type alias for the Chromatic library.
 pub type Result<T> = std::result::Result<T, ChromaticError>;
 
-// Implement From traits for automatic error conversion
-impl From<ColourParsingError> for ChromaticError {
-    fn from(err: ColourParsingError) -> Self {
-        Self::ColourParsing(err.to_string())
-    }
-}
-
-impl From<ConversionError> for ChromaticError {
-    fn from(err: ConversionError) -> Self {
-        Self::ColourConversion(err.to_string())
-    }
-}
-
-impl From<InterpolationError> for ChromaticError {
-    fn from(err: InterpolationError) -> Self {
-        Self::Interpolation(err.to_string())
-    }
-}
-
-impl From<ColourMapError> for ChromaticError {
-    fn from(err: ColourMapError) -> Self {
-        Self::ColourMap(err.to_string())
-    }
-}
-
-impl From<NumericError> for ChromaticError {
-    fn from(err: NumericError) -> Self {
-        Self::Math(err.to_string())
-    }
-}
-
 impl From<ChromaticError> for std::fmt::Error {
     fn from(_: ChromaticError) -> Self {
         Self
     }
 }
 
-/// Safe conversion for common constants
+/// Safe conversion for common constants with detailed error context.
 pub fn safe_constant<S: Copy + Send + Sync + Display + ToPrimitive, T: Send + Sync + Float>(value: S) -> Result<T> {
     T::from(value).ok_or_else(|| {
         NumericError::TypeConversionFailed {
@@ -162,4 +131,109 @@ pub fn safe_constant<S: Copy + Send + Sync + Display + ToPrimitive, T: Send + Sy
         }
         .into()
     })
+}
+
+/// Validate a component is within a specified range with consistent error messages.
+pub fn validate_component_range<T: Float + Send + Sync>(value: T, name: &str, min: T, max: T) -> Result<()> {
+    if value < min || value > max {
+        return Err(ChromaticError::InvalidColour(format!(
+            "{} component ({}) must be between {} and {}",
+            name,
+            value.to_f64().unwrap_or(f64::NAN),
+            min.to_f64().unwrap_or(f64::NAN),
+            max.to_f64().unwrap_or(f64::NAN)
+        )));
+    }
+    Ok(())
+}
+
+/// Validate a component is within [0, 1] range - the most common validation.
+pub fn validate_unit_component<T: Float + Send + Sync>(value: T, name: &str) -> Result<()> {
+    validate_component_range(value, name, T::zero(), T::one())
+}
+
+/// Validate an interpolation factor is within [0, 1] range.
+pub fn validate_interpolation_factor<T: Float + Send + Sync>(t: T) -> Result<()> {
+    if t < T::zero() || t > T::one() {
+        return Err(InterpolationError::InvalidInterpolationFactor {
+            factor: t.to_f64().unwrap_or(f64::NAN),
+        }
+        .into());
+    }
+    Ok(())
+}
+
+/// Convert a component to u8 with proper error handling.
+pub fn component_to_u8<T: Float + Send + Sync>(value: T, name: &str, scale_factor: T) -> Result<u8> {
+    let scaled = (value * scale_factor).round();
+    scaled.to_u8().ok_or_else(|| {
+        NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "{} value {} is outside u8 range [0, 255]",
+                name,
+                scaled.to_f64().unwrap_or(f64::NAN)
+            ),
+        }
+        .into()
+    })
+}
+
+/// Convert a u8 component to the target float type with proper scaling.
+pub fn u8_to_component<T: Float + Send + Sync>(value: u8, scale_factor: T) -> Result<T> {
+    let converted = safe_constant::<u8, T>(value)?;
+    Ok(converted / scale_factor)
+}
+
+/// Parse a hex string component (1 or 2 characters) to u8.
+pub fn parse_hex_component(hex: &str, component_name: &str) -> Result<u8> {
+    u8::from_str_radix(hex, 16).map_err(|source| {
+        ColourParsingError::HexParseError {
+            component: component_name.to_string(),
+            source,
+        }
+        .into()
+    })
+}
+
+/// Normalize hue to [0, 360) range with overflow protection.
+pub fn normalize_hue<T: Float + Send + Sync>(mut hue: T) -> Result<T> {
+    let f360 = safe_constant(360.0)?;
+
+    // Handle potential infinite loops by limiting iterations
+    let mut iterations = 0;
+    const MAX_ITERATIONS: usize = 1000;
+
+    while hue >= f360 && iterations < MAX_ITERATIONS {
+        hue = hue - f360;
+        iterations += 1;
+    }
+
+    iterations = 0;
+    while hue < T::zero() && iterations < MAX_ITERATIONS {
+        hue = hue + f360;
+        iterations += 1;
+    }
+
+    if iterations >= MAX_ITERATIONS {
+        return Err(NumericError::InvalidMathOperation(format!(
+            "Hue normalization failed: value too large ({})",
+            hue.to_f64().unwrap_or(f64::NAN)
+        ))
+        .into());
+    }
+
+    Ok(hue)
+}
+
+/// Helper for terminal color formatting that handles conversion errors.
+pub fn format_terminal_color<T: Float + Send + Sync>(red: T, green: T, blue: T, symbol: char) -> Result<String> {
+    let scale = safe_constant::<i32, T>(255)?;
+
+    let r = component_to_u8(red, "red", scale)?;
+    let g = component_to_u8(green, "green", scale)?;
+    let b = component_to_u8(blue, "blue", scale)?;
+
+    Ok(format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, symbol))
 }

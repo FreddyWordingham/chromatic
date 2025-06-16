@@ -21,4 +21,10 @@ pub enum InterpolationError {
 
     #[error("Weight sum is zero or invalid")]
     InvalidWeightSum,
+
+    #[error("Mathematical error during interpolation: {operation}")]
+    MathError { operation: String },
+
+    #[error("Hue interpolation failed: cannot determine shortest path for values {hue1} and {hue2}")]
+    HueInterpolationError { hue1: f64, hue2: f64 },
 }

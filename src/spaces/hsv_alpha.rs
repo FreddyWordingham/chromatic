@@ -1,11 +1,10 @@
 //! HSV colour with transparency representation.
 
 use num_traits::Float;
-
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
-    error::{ChromaticError, Result},
+    error::{Result, normalize_hue, validate_unit_component},
     impl_transparent_colour, impl_transparent_convert, impl_transparent_display,
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
@@ -16,14 +15,26 @@ use crate::{
 pub struct HsvAlpha<T: Float + Send + Sync> {
     /// Base colour
     colour: Hsv<T>,
-    /// Alpha component
+    /// Alpha component in range [0, 1].
     alpha: T,
 }
 
 impl<T: Float + Send + Sync> HsvAlpha<T> {
     /// Create a new `HsvAlpha` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `hue` - The hue in degrees, will be normalized to [0, 360)
+    /// * `saturation` - The saturation, must be in range [0, 1]
+    /// * `value` - The value (brightness), must be in range [0, 1]
+    /// * `alpha` - The alpha (transparency) component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saturation, value, or alpha are outside [0, 1],
+    /// or if hue normalization fails.
     pub fn new(hue: T, saturation: T, value: T, alpha: T) -> Result<Self> {
-        Self::validate_component(alpha, "alpha")?;
+        validate_unit_component(alpha, "alpha")?;
 
         Ok(Self {
             colour: Hsv::new(hue, saturation, value)?,
@@ -32,22 +43,19 @@ impl<T: Float + Send + Sync> HsvAlpha<T> {
     }
 
     /// Create a new `HsvAlpha` instance from a `Hsv` colour and an alpha component.
+    ///
+    /// # Arguments
+    ///
+    /// * `colour` - The base HSV colour
+    /// * `alpha` - The alpha (transparency) component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the alpha component is outside the range [0, 1].
     fn new_colour_with_alpha(colour: Hsv<T>, alpha: T) -> Result<Self> {
-        Self::validate_component(alpha, "alpha")?;
+        validate_unit_component(alpha, "alpha")?;
 
         Ok(Self { colour, alpha })
-    }
-
-    /// Validate a single component is in range [0, 1].
-    fn validate_component(value: T, name: &str) -> Result<()> {
-        if value < T::zero() || value > T::one() {
-            return Err(ChromaticError::InvalidColour(format!(
-                "{} component ({}) must be between 0 and 1",
-                name,
-                value.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
     }
 
     /// Get the base `colour`.
@@ -55,7 +63,7 @@ impl<T: Float + Send + Sync> HsvAlpha<T> {
         &self.colour
     }
 
-    /// Get the `hue` component.
+    /// Get the `hue` component in degrees [0, 360).
     pub const fn hue(&self) -> T {
         self.colour.hue()
     }
@@ -76,23 +84,79 @@ impl<T: Float + Send + Sync> HsvAlpha<T> {
     }
 
     /// Set the `hue` component.
-    pub fn set_hue(&mut self, red: T) -> Result<()> {
-        self.colour.set_hue(red)
+    ///
+    /// # Arguments
+    ///
+    /// * `hue` - The new hue in degrees, will be normalized to [0, 360)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if hue normalization fails.
+    pub fn set_hue(&mut self, hue: T) -> Result<()> {
+        self.colour.set_hue(hue)
     }
 
     /// Set the `saturation` component.
-    pub fn set_saturation(&mut self, green: T) -> Result<()> {
-        self.colour.set_saturation(green)
+    ///
+    /// # Arguments
+    ///
+    /// * `saturation` - The new saturation, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
+    pub fn set_saturation(&mut self, saturation: T) -> Result<()> {
+        self.colour.set_saturation(saturation)
     }
 
     /// Set the `value` component.
-    pub fn set_value(&mut self, blue: T) -> Result<()> {
-        self.colour.set_value(blue)
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The new value (brightness), must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
+    pub fn set_value(&mut self, value: T) -> Result<()> {
+        self.colour.set_value(value)
     }
 
     /// Set the `alpha` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `alpha` - The new alpha value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_alpha(&mut self, alpha: T) -> Result<()> {
-        Self::validate_component(alpha, "alpha")?;
+        validate_unit_component(alpha, "alpha")?;
+        self.alpha = alpha;
+        Ok(())
+    }
+
+    /// Set all components at once with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `hue` - The hue in degrees, will be normalized to [0, 360)
+    /// * `saturation` - The saturation, must be in range [0, 1]
+    /// * `value` - The value (brightness), must be in range [0, 1]
+    /// * `alpha` - The alpha component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component validation fails.
+    pub fn set_components(&mut self, hue: T, saturation: T, value: T, alpha: T) -> Result<()> {
+        let normalized_hue = normalize_hue(hue)?;
+        validate_unit_component(saturation, "saturation")?;
+        validate_unit_component(value, "value")?;
+        validate_unit_component(alpha, "alpha")?;
+
+        // If all validations pass, update all components
+        self.colour = Hsv::new(normalized_hue, saturation, value)?;
         self.alpha = alpha;
         Ok(())
     }

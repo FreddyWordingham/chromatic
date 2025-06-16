@@ -1,14 +1,14 @@
 //! Monochrome colour representation.
 
 use num_traits::Float;
-use std::{
-    any::type_name,
-    fmt::{Display, Formatter, Result as FmtResult},
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, NumericError, Result, safe_constant},
+    error::{
+        ColourParsingError, Result, component_to_u8, format_terminal_color, parse_hex_component, safe_constant,
+        u8_to_component, validate_interpolation_factor, validate_unit_component,
+    },
     spaces::{GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -16,30 +16,23 @@ use crate::{
 /// Monochrome colour.
 #[derive(Debug, Clone, Copy)]
 pub struct Grey<T: Float + Send + Sync> {
-    /// Grey component.
+    /// Grey component in range [0, 1].
     grey: T,
 }
 
 impl<T: Float + Send + Sync> Grey<T> {
     /// Create a new `Grey` instance with validation.
     ///
+    /// # Arguments
+    ///
+    /// * `grey` - The grey value, must be in range [0, 1]
+    ///
     /// # Errors
     ///
     /// Returns an error if the grey value is outside the range [0, 1].
     pub fn new(grey: T) -> Result<Self> {
-        Self::validate_grey(grey)?;
+        validate_unit_component(grey, "grey")?;
         Ok(Self { grey })
-    }
-
-    /// Validate grey component is in range [0, 1].
-    fn validate_grey(grey: T) -> Result<()> {
-        if grey < T::zero() || grey > T::one() {
-            return Err(ChromaticError::InvalidColour(format!(
-                "Grey component ({}) must be between 0 and 1",
-                grey.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
     }
 
     /// Get the `grey` component.
@@ -49,11 +42,15 @@ impl<T: Float + Send + Sync> Grey<T> {
 
     /// Set the `grey` component with validation.
     ///
+    /// # Arguments
+    ///
+    /// * `grey` - The new grey value, must be in range [0, 1]
+    ///
     /// # Errors
     ///
     /// Returns an error if the value is outside the range [0, 1].
     pub fn set_grey(&mut self, grey: T) -> Result<()> {
-        Self::validate_grey(grey)?;
+        validate_unit_component(grey, "grey")?;
         self.grey = grey;
         Ok(())
     }
@@ -61,73 +58,57 @@ impl<T: Float + Send + Sync> Grey<T> {
 
 impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
     fn from_hex(hex: &str) -> Result<Self> {
+        let hex = hex.trim();
+
+        // Check for # prefix
         let components = hex
-            .trim()
             .strip_prefix('#')
-            .ok_or_else(|| ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
+            .ok_or_else(|| ColourParsingError::MissingHexPrefix(hex.to_string()))?;
+
         let grey = match components.len() {
             // Short form: #G
             1 => {
-                let value = u8::from_str_radix(components, 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
+                let value = parse_hex_component(components, "grey")?;
                 // Expand short form (e.g., #F becomes #FF)
-                T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
-                    * safe_constant(17.0)?
-                    / safe_constant(255.0)?
+                let expanded = value * 17;
+                u8_to_component(expanded, safe_constant(255.0)?)?
             }
             // Long form: #GG
             2 => {
-                let value = u8::from_str_radix(components, 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex value: {err}")))?;
-                T::from(value).ok_or_else(|| ChromaticError::Math("Failed to convert grey value".to_string()))?
-                    / safe_constant(255.0)?
+                let value = parse_hex_component(components, "grey")?;
+                u8_to_component(value, safe_constant(255.0)?)?
             }
-            _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
+            _ => {
+                return Err(ColourParsingError::InvalidHexLength {
+                    actual: components.len(),
+                }
+                .into());
+            }
         };
+
         Self::new(grey)
     }
 
     fn to_hex(&self) -> Result<String> {
-        let u255: T = safe_constant::<u8, T>(255_u8)?;
-        let scaled = (self.grey * u255).round();
-        let grey = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Grey value {} is outside u8 range [0, 255]",
-                scaled.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-        Ok(format!("#{grey:02X}"))
+        let scale = safe_constant(255.0)?;
+        let grey = component_to_u8(self.grey, "grey", scale)?;
+        Ok(format!("#{:02X}", grey))
     }
+
     fn from_bytes(bytes: [u8; 1]) -> Result<Self> {
-        let u255 = safe_constant::<u8, T>(255_u8)?;
-        let value = safe_constant::<u8, T>(bytes[0])? / u255;
+        let scale = safe_constant(255.0)?;
+        let value = u8_to_component(bytes[0], scale)?;
         Self::new(value)
     }
 
     fn to_bytes(self) -> Result<[u8; 1]> {
-        let u255: T = safe_constant::<u8, T>(255_u8)?;
-        let scaled = (self.grey * u255).round();
-        let value = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Grey value {} is outside u8 range [0, 255]",
-                scaled.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
+        let scale = safe_constant(255.0)?;
+        let value = component_to_u8(self.grey, "grey", scale)?;
         Ok([value])
     }
 
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
-        if t < T::zero() || t > T::one() {
-            return Err(ChromaticError::Interpolation(format!(
-                "Interpolation factor ({}) must be between 0 and 1",
-                t.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-
+        validate_interpolation_factor(t)?;
         Self::new(lhs.grey() * (T::one() - t) + rhs.grey() * t)
     }
 }
@@ -212,10 +193,7 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
 
 impl<T: Float + Send + Sync> Display for Grey<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let i255 = safe_constant::<i32, T>(255_i32)?;
-
-        let value = (self.grey * i255).round().to_u8().ok_or(std::fmt::Error)?;
-
-        write!(fmt, "\x1b[38;2;{value};{value};{value}m{PRINT_BLOCK}\x1b[0m")
+        let color_string = format_terminal_color(self.grey, self.grey, self.grey, PRINT_BLOCK)?;
+        write!(fmt, "{}", color_string)
     }
 }

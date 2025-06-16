@@ -14,7 +14,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result, safe_constant},
+    error::{Result, format_terminal_color, safe_constant, validate_component_range, validate_interpolation_factor},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -24,69 +24,38 @@ use crate::{
 pub struct Lab<T: Float + Send + Sync> {
     /// Lightness component in range [0, 100].
     lightness: T,
-    /// a component in range [-128, 127].
+    /// a* component in range [-128, 127].
     a_star: T,
-    /// b component in range [-128, 127].
+    /// b* component in range [-128, 127].
     b_star: T,
 }
 
 impl<T: Float + Send + Sync> Lab<T> {
     /// Create a new `Lab` instance with validation.
     ///
+    /// # Arguments
+    ///
+    /// * `lightness` - The L* component, must be in range [0, 100]
+    /// * `a_star` - The a* component, must be in range [-128, 127]
+    /// * `b_star` - The b* component, must be in range [-128, 127]
+    ///
     /// # Errors
     ///
     /// Returns an error if lightness is outside [0, 100] or if a*/b* are outside [-128, 127].
     pub fn new(lightness: T, a_star: T, b_star: T) -> Result<Self> {
-        Self::validate_lightness(lightness)?;
-        Self::validate_a_star(a_star)?;
-        Self::validate_b_star(b_star)?;
+        let max_lightness = safe_constant(100.0)?;
+        let min_chroma = safe_constant(-128.0)?;
+        let max_chroma = safe_constant(127.0)?;
+
+        validate_component_range(lightness, "lightness", T::zero(), max_lightness)?;
+        validate_component_range(a_star, "a*", min_chroma, max_chroma)?;
+        validate_component_range(b_star, "b*", min_chroma, max_chroma)?;
 
         Ok(Self {
             lightness,
             a_star,
             b_star,
         })
-    }
-
-    /// Validate lightness is in range [0, 100].
-    fn validate_lightness(lightness: T) -> Result<()> {
-        let max = T::from(100.0).ok_or_else(|| ChromaticError::Math("Failed to convert 100.0 to target type".to_string()))?;
-
-        if lightness < T::zero() || lightness > max {
-            return Err(ChromaticError::InvalidColour(format!(
-                "Lightness ({}) must be between 0 and 100",
-                lightness.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
-    }
-
-    /// Validate a* component is in range [-128, 127].
-    fn validate_a_star(a_star: T) -> Result<()> {
-        let min = T::from(-128.0).ok_or_else(|| ChromaticError::Math("Failed to convert -128.0 to target type".to_string()))?;
-        let max = T::from(127.0).ok_or_else(|| ChromaticError::Math("Failed to convert 127.0 to target type".to_string()))?;
-
-        if a_star < min || a_star > max {
-            return Err(ChromaticError::InvalidColour(format!(
-                "a* component ({}) must be between -128 and 127",
-                a_star.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
-    }
-
-    /// Validate b* component is in range [-128, 127].
-    fn validate_b_star(b_star: T) -> Result<()> {
-        let min = T::from(-128.0).ok_or_else(|| ChromaticError::Math("Failed to convert -128.0 to target type".to_string()))?;
-        let max = T::from(127.0).ok_or_else(|| ChromaticError::Math("Failed to convert 127.0 to target type".to_string()))?;
-
-        if b_star < min || b_star > max {
-            return Err(ChromaticError::InvalidColour(format!(
-                "b* component ({}) must be between -128 and 127",
-                b_star.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
     }
 
     /// Get the `lightness` component (L*).
@@ -105,22 +74,51 @@ impl<T: Float + Send + Sync> Lab<T> {
     }
 
     /// Set the `lightness` component with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `lightness` - The new L* value, must be in range [0, 100]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 100].
     pub fn set_lightness(&mut self, lightness: T) -> Result<()> {
-        Self::validate_lightness(lightness)?;
+        let max_lightness = safe_constant(100.0)?;
+        validate_component_range(lightness, "lightness", T::zero(), max_lightness)?;
         self.lightness = lightness;
         Ok(())
     }
 
     /// Set the `a_star` component with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `a_star` - The new a* value, must be in range [-128, 127]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [-128, 127].
     pub fn set_a_star(&mut self, a_star: T) -> Result<()> {
-        Self::validate_a_star(a_star)?;
+        let min_chroma = safe_constant(-128.0)?;
+        let max_chroma = safe_constant(127.0)?;
+        validate_component_range(a_star, "a*", min_chroma, max_chroma)?;
         self.a_star = a_star;
         Ok(())
     }
 
     /// Set the `b_star` component with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `b_star` - The new b* value, must be in range [-128, 127]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [-128, 127].
     pub fn set_b_star(&mut self, b_star: T) -> Result<()> {
-        Self::validate_b_star(b_star)?;
+        let min_chroma = safe_constant(-128.0)?;
+        let max_chroma = safe_constant(127.0)?;
+        validate_component_range(b_star, "b*", min_chroma, max_chroma)?;
         self.b_star = b_star;
         Ok(())
     }
@@ -142,9 +140,9 @@ impl<T: Float + Send + Sync> Lab<T> {
     /// Calculate perceptual colour difference using the improved CIE94 Delta E formula.
     /// This is more accurate than the basic `delta_e` method, especially for saturated colours.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
+    /// Returns an error if mathematical operations fail during calculation.
     pub fn delta_e94(&self, other: &Self) -> Result<T> {
         // Weighting factors
         let k_l = T::one();
@@ -214,12 +212,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Lab<T> {
     /// Lab is designed to be perceptually uniform, so linear interpolation
     /// in this space produces perceptually uniform gradients.
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
-        if t < T::zero() || t > T::one() {
-            return Err(ChromaticError::Interpolation(format!(
-                "Interpolation factor ({}) must be between 0 and 1",
-                t.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
+        validate_interpolation_factor(t)?;
 
         Self::new(
             lhs.lightness * (T::one() - t) + rhs.lightness * t,
@@ -341,12 +334,7 @@ impl<T: Float + Send + Sync> Convert<T> for Lab<T> {
 impl<T: Float + Send + Sync> Display for Lab<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let i255 = safe_constant::<i32, T>(255_i32)?;
-
-        let red = (rgb.red() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let green = (rgb.green() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let blue = (rgb.blue() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-
-        write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
+        let color_string = format_terminal_color(rgb.red(), rgb.green(), rgb.blue(), PRINT_BLOCK)?;
+        write!(fmt, "{}", color_string)
     }
 }

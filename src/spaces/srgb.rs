@@ -1,14 +1,14 @@
 //! sRGB colour representation.
 
 use num_traits::Float;
-use std::{
-    any::type_name,
-    fmt::{Display, Formatter, Result as FmtResult},
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, NumericError, Result, safe_constant},
+    error::{
+        ColourParsingError, Result, component_to_u8, format_terminal_color, parse_hex_component, safe_constant,
+        u8_to_component, validate_interpolation_factor, validate_unit_component,
+    },
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -30,24 +30,22 @@ pub struct Srgb<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> Srgb<T> {
     /// Create a new `Srgb` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `red` - The red component, must be in range [0, 1]
+    /// * `green` - The green component, must be in range [0, 1]
+    /// * `blue` - The blue component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component is outside the range [0, 1].
     pub fn new(red: T, green: T, blue: T) -> Result<Self> {
-        Self::validate_component(red, "red")?;
-        Self::validate_component(green, "green")?;
-        Self::validate_component(blue, "blue")?;
+        validate_unit_component(red, "red")?;
+        validate_unit_component(green, "green")?;
+        validate_unit_component(blue, "blue")?;
 
         Ok(Self { red, green, blue })
-    }
-
-    /// Validate a single component is in range [0, 1].
-    fn validate_component(value: T, name: &str) -> Result<()> {
-        if value < T::zero() || value > T::one() {
-            return Err(ChromaticError::InvalidColour(format!(
-                "{} component ({}) must be between 0 and 1",
-                name,
-                value.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
     }
 
     /// Get the `red` component.
@@ -66,22 +64,68 @@ impl<T: Float + Send + Sync> Srgb<T> {
     }
 
     /// Set the `red` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `red` - The new red value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_red(&mut self, red: T) -> Result<()> {
-        Self::validate_component(red, "red")?;
+        validate_unit_component(red, "red")?;
         self.red = red;
         Ok(())
     }
 
     /// Set the `green` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `green` - The new green value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_green(&mut self, green: T) -> Result<()> {
-        Self::validate_component(green, "green")?;
+        validate_unit_component(green, "green")?;
         self.green = green;
         Ok(())
     }
 
     /// Set the `blue` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `blue` - The new blue value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_blue(&mut self, blue: T) -> Result<()> {
-        Self::validate_component(blue, "blue")?;
+        validate_unit_component(blue, "blue")?;
+        self.blue = blue;
+        Ok(())
+    }
+
+    /// Set all components at once with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `red` - The red component, must be in range [0, 1]
+    /// * `green` - The green component, must be in range [0, 1]
+    /// * `blue` - The blue component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component is outside the range [0, 1].
+    pub fn set_components(&mut self, red: T, green: T, blue: T) -> Result<()> {
+        validate_unit_component(red, "red")?;
+        validate_unit_component(green, "green")?;
+        validate_unit_component(blue, "blue")?;
+
+        self.red = red;
+        self.green = green;
         self.blue = blue;
         Ok(())
     }
@@ -91,9 +135,13 @@ impl<T: Float + Send + Sync> Srgb<T> {
     /// This converts a linear RGB value to an sRGB value using the standard
     /// piecewise encoding function specified in the sRGB standard.
     ///
-    /// # Panics
+    /// # Arguments
     ///
-    /// This function will not panic.
+    /// * `linear` - Linear RGB component value in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if mathematical operations fail during encoding.
     pub fn gamma_encode(linear: T) -> Result<T> {
         Ok(if linear <= safe_constant(0.003_130_8)? {
             safe_constant::<f64, T>(12.92)? * linear
@@ -107,9 +155,13 @@ impl<T: Float + Send + Sync> Srgb<T> {
     /// This converts an sRGB value to a linear RGB value using the standard
     /// piecewise decoding function specified in the sRGB standard.
     ///
-    /// # Panics
+    /// # Arguments
     ///
-    /// This function will not panic.
+    /// * `srgb` - sRGB component value in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if mathematical operations fail during decoding.
     pub fn gamma_decode(srgb: T) -> Result<T> {
         Ok(if srgb <= safe_constant::<f64, T>(0.04045)? {
             srgb / safe_constant(12.92)?
@@ -121,133 +173,78 @@ impl<T: Float + Send + Sync> Srgb<T> {
 
 impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
     fn from_hex(hex: &str) -> Result<Self> {
+        let hex = hex.trim();
+
+        // Check for # prefix
         let components = hex
-            .trim()
             .strip_prefix('#')
-            .ok_or_else(|| ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
+            .ok_or_else(|| ColourParsingError::MissingHexPrefix(hex.to_string()))?;
 
         let (red, green, blue) = match components.len() {
             // Short form: #RGB
             3 => {
-                let red = u8::from_str_radix(&components[0..1], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
-                let green = u8::from_str_radix(&components[1..2], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
-                let blue = u8::from_str_radix(&components[2..3], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
+                let red = parse_hex_component(&components[0..1], "red")?;
+                let green = parse_hex_component(&components[1..2], "green")?;
+                let blue = parse_hex_component(&components[2..3], "blue")?;
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
-                let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    * safe_constant(17)?
-                    / safe_constant(255)?;
-                let scaled_green = T::from(green)
-                    .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    * safe_constant(17)?
-                    / safe_constant(255)?;
-                let scaled_blue = T::from(blue)
-                    .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    * safe_constant(17)?
-                    / safe_constant(255)?;
+                let scale = safe_constant(255.0)?;
+                let expanded_red = red * 17;
+                let expanded_green = green * 17;
+                let expanded_blue = blue * 17;
 
-                (scaled_red, scaled_green, scaled_blue)
+                (
+                    u8_to_component(expanded_red, scale)?,
+                    u8_to_component(expanded_green, scale)?,
+                    u8_to_component(expanded_blue, scale)?,
+                )
             }
             // Long form: #RRGGBB
             6 => {
-                let red = u8::from_str_radix(&components[0..2], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex red: {err}")))?;
-                let green = u8::from_str_radix(&components[2..4], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex green: {err}")))?;
-                let blue = u8::from_str_radix(&components[4..6], 16)
-                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex blue: {err}")))?;
+                let red = parse_hex_component(&components[0..2], "red")?;
+                let green = parse_hex_component(&components[2..4], "green")?;
+                let blue = parse_hex_component(&components[4..6], "blue")?;
 
-                let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
-                    / safe_constant(255)?;
-                let scaled_green = T::from(green)
-                    .ok_or_else(|| ChromaticError::Math("Failed to convert green value".to_string()))?
-                    / safe_constant(255)?;
-                let scaled_blue = T::from(blue)
-                    .ok_or_else(|| ChromaticError::Math("Failed to convert blue value".to_string()))?
-                    / safe_constant(255)?;
-
-                (scaled_red, scaled_green, scaled_blue)
+                let scale = safe_constant(255.0)?;
+                (
+                    u8_to_component(red, scale)?,
+                    u8_to_component(green, scale)?,
+                    u8_to_component(blue, scale)?,
+                )
             }
-            _ => return Err(ChromaticError::ColourParsing("Invalid hex format".to_string())),
+            _ => {
+                return Err(ColourParsingError::InvalidHexLength {
+                    actual: components.len(),
+                }
+                .into());
+            }
         };
+
         Self::new(red, green, blue)
     }
 
     fn to_hex(&self) -> Result<String> {
-        let u255 = safe_constant(255_u8)?;
-        let scaled_red = (self.red * u255).round();
-        let scaled_green = (self.green * u255).round();
-        let scaled_blue = (self.blue * u255).round();
+        let scale = safe_constant(255.0)?;
+        let red = component_to_u8(self.red, "red", scale)?;
+        let green = component_to_u8(self.green, "green", scale)?;
+        let blue = component_to_u8(self.blue, "blue", scale)?;
 
-        let red = scaled_red.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Red value {} is outside u8 range [0, 255]",
-                scaled_red.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-        let green = scaled_green.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Green value {} is outside u8 range [0, 255]",
-                scaled_green.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-        let blue = scaled_blue.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Blue value {} is outside u8 range [0, 255]",
-                scaled_blue.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-
-        Ok(format!("#{red:02X}{green:02X}{blue:02X}"))
+        Ok(format!("#{:02X}{:02X}{:02X}", red, green, blue))
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
-        let u255 = safe_constant::<u8, T>(255_u8)?;
-        let red = safe_constant::<u8, T>(bytes[0])? / u255;
-        let green = safe_constant::<u8, T>(bytes[1])? / u255;
-        let blue = safe_constant::<u8, T>(bytes[2])? / u255;
+        let scale = safe_constant(255.0)?;
+        let red = u8_to_component(bytes[0], scale)?;
+        let green = u8_to_component(bytes[1], scale)?;
+        let blue = u8_to_component(bytes[2], scale)?;
         Self::new(red, green, blue)
     }
 
     fn to_bytes(self) -> Result<[u8; 3]> {
-        let u255: T = safe_constant::<u8, T>(255_u8)?;
-        let scaled_red = (self.red * u255).round();
-        let scaled_green = (self.green * u255).round();
-        let scaled_blue = (self.blue * u255).round();
-
-        let red = scaled_red.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Red value {} is outside u8 range [0, 255]",
-                scaled_red.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-        let green = scaled_green.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Green value {} is outside u8 range [0, 255]",
-                scaled_green.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
-        let blue = scaled_blue.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
-            from: type_name::<T>().to_string(),
-            to: "u8".to_string(),
-            reason: format!(
-                "Blue value {} is outside u8 range [0, 255]",
-                scaled_blue.to_f64().unwrap_or(f64::NAN)
-            ),
-        })?;
+        let scale = safe_constant(255.0)?;
+        let red = component_to_u8(self.red, "red", scale)?;
+        let green = component_to_u8(self.green, "green", scale)?;
+        let blue = component_to_u8(self.blue, "blue", scale)?;
 
         Ok([red, green, blue])
     }
@@ -257,12 +254,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
     /// uniform. For perceptually uniform interpolation, consider converting to Lab
     /// or another perceptually uniform color space.
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
-        if t < T::zero() || t > T::one() {
-            return Err(ChromaticError::Interpolation(format!(
-                "Interpolation factor ({}) must be between 0 and 1",
-                t.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
+        validate_interpolation_factor(t)?;
 
         Self::new(
             lhs.red * (T::one() - t) + rhs.red * t,
@@ -359,12 +351,7 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
 
 impl<T: Float + Send + Sync> Display for Srgb<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let i255 = safe_constant::<i32, T>(255_i32)?;
-
-        let red = (self.red * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let green = (self.green * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let blue = (self.blue * i255).round().to_u8().ok_or(std::fmt::Error)?;
-
-        write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
+        let color_string = format_terminal_color(self.red, self.green, self.blue, PRINT_BLOCK)?;
+        write!(fmt, "{}", color_string)
     }
 }

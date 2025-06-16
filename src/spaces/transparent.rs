@@ -6,10 +6,13 @@ macro_rules! impl_transparent_colour {
     ($type:ty, $base:ty, $base_components:literal) => {
         impl<T: Float + Send + Sync> Colour<T, { $base_components + 1 }> for $type {
             fn from_hex(hex: &str) -> Result<Self> {
+                let hex = hex.trim();
+
+                // Check for # prefix
                 let components = hex
-                    .trim()
                     .strip_prefix('#')
-                    .ok_or_else(|| $crate::error::ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
+                    .ok_or_else(|| $crate::error::ColourParsingError::MissingHexPrefix(hex.to_string()))?;
+
                 let chars: Vec<char> = components.chars().collect();
 
                 match chars.len() {
@@ -22,15 +25,11 @@ macro_rules! impl_transparent_colour {
 
                         // Parse alpha (single hex digit)
                         let alpha_char = chars[$base_components];
-                        let alpha_val = u8::from_str_radix(&alpha_char.to_string(), 16).map_err(|err| {
-                            $crate::error::ChromaticError::ColourParsing(format!("Invalid hex digit: {}", err))
-                        })?;
+                        let alpha_val = $crate::error::parse_hex_component(&alpha_char.to_string(), "alpha")?;
 
                         // Expand from single hex digit (e.g., F -> FF)
-                        let alpha = T::from(alpha_val)
-                            .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
-                            * $crate::error::safe_constant(17)?
-                            / $crate::error::safe_constant(255)?;
+                        let expanded_alpha = alpha_val * 17;
+                        let alpha = $crate::error::u8_to_component(expanded_alpha, $crate::error::safe_constant(255.0)?)?;
 
                         Self::new_colour_with_alpha(colour, alpha)
                     }
@@ -43,37 +42,20 @@ macro_rules! impl_transparent_colour {
 
                         // Parse alpha (two hex digits)
                         let alpha_hex: String = chars[($base_components * 2)..].iter().collect();
-                        let alpha_val = u8::from_str_radix(&alpha_hex, 16).map_err(|err| {
-                            $crate::error::ChromaticError::ColourParsing(format!("Invalid hex alpha: {}", err))
-                        })?;
+                        let alpha_val = $crate::error::parse_hex_component(&alpha_hex, "alpha")?;
 
-                        let alpha = T::from(alpha_val)
-                            .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
-                            / $crate::error::safe_constant(255)?;
+                        let alpha = $crate::error::u8_to_component(alpha_val, $crate::error::safe_constant(255.0)?)?;
 
                         Self::new_colour_with_alpha(colour, alpha)
                     }
-                    _ => Err($crate::error::ChromaticError::ColourParsing(
-                        "Invalid hex format".to_string(),
-                    )),
+                    _ => Err($crate::error::ColourParsingError::InvalidHexLength { actual: chars.len() }.into()),
                 }
             }
 
             fn to_hex(&self) -> Result<String> {
-                let u255 = $crate::error::safe_constant(255_u8)?;
+                let scale = $crate::error::safe_constant(255.0)?;
                 let colour_hex = self.colour().to_hex()?;
-                let scaled_alpha = (self.alpha() * u255).round();
-
-                let alpha = scaled_alpha
-                    .to_u8()
-                    .ok_or_else(|| $crate::error::NumericError::TypeConversionFailed {
-                        from: std::any::type_name::<T>().to_string(),
-                        to: "u8".to_string(),
-                        reason: format!(
-                            "Alpha value {} is outside u8 range [0, 255]",
-                            scaled_alpha.to_f64().unwrap_or(f64::NAN)
-                        ),
-                    })?;
+                let alpha = $crate::error::component_to_u8(self.alpha(), "alpha", scale)?;
 
                 // Remove # from colour hex and add alpha
                 let colour_part: String = colour_hex.chars().skip(1).collect();
@@ -81,7 +63,7 @@ macro_rules! impl_transparent_colour {
             }
 
             fn from_bytes(bytes: [u8; $base_components + 1]) -> Result<Self> {
-                let u255 = $crate::error::safe_constant::<u8, T>(255_u8)?;
+                let scale = $crate::error::safe_constant(255.0)?;
 
                 // Extract base colour bytes
                 let mut base_bytes = [0_u8; $base_components];
@@ -90,27 +72,16 @@ macro_rules! impl_transparent_colour {
                 }
 
                 let colour = <$base>::from_bytes(base_bytes)?;
-                let alpha = $crate::error::safe_constant::<u8, T>(bytes[$base_components])? / u255;
+                let alpha = $crate::error::u8_to_component(bytes[$base_components], scale)?;
 
                 Self::new_colour_with_alpha(colour, alpha)
             }
 
             fn to_bytes(self) -> Result<[u8; $base_components + 1]> {
-                let u255 = $crate::error::safe_constant::<u8, T>(255_u8)?;
+                let scale = $crate::error::safe_constant(255.0)?;
 
                 let base_bytes = self.colour().to_bytes()?;
-                let scaled_alpha = (self.alpha() * u255).round();
-
-                let alpha = scaled_alpha
-                    .to_u8()
-                    .ok_or_else(|| $crate::error::NumericError::TypeConversionFailed {
-                        from: std::any::type_name::<T>().to_string(),
-                        to: "u8".to_string(),
-                        reason: format!(
-                            "Alpha value {} is outside u8 range [0, 255]",
-                            scaled_alpha.to_f64().unwrap_or(f64::NAN)
-                        ),
-                    })?;
+                let alpha = $crate::error::component_to_u8(self.alpha(), "alpha", scale)?;
 
                 // Create result array
                 let mut result = [0_u8; $base_components + 1];
@@ -127,12 +98,7 @@ macro_rules! impl_transparent_colour {
             }
 
             fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
-                if t < T::zero() || t > T::one() {
-                    return Err(ChromaticError::Interpolation(format!(
-                        "Interpolation factor ({}) must be between 0 and 1",
-                        t.to_f64().unwrap_or(f64::NAN)
-                    )));
-                }
+                $crate::error::validate_interpolation_factor(t)?;
 
                 // Interpolate base colour
                 let colour = <$base>::lerp(lhs.colour(), rhs.colour(), t)?;

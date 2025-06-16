@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result, safe_constant},
+    error::{Result, format_terminal_color, safe_constant, validate_interpolation_factor, validate_unit_component},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, Rgb, RgbAlpha, Srgb, SrgbAlpha, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -25,26 +25,25 @@ pub struct Xyz<T: Float + Send + Sync> {
 
 impl<T: Float + Send + Sync> Xyz<T> {
     /// Create a new `Xyz` instance.
-    /// Note: XYZ values are theoretically unbounded, but non-negative values are enforced here for practical reasons.
+    /// Note: XYZ values are theoretically unbounded, but we enforce non-negative values
+    /// and practical upper bounds for this implementation.
     /// Typical values for D65 reference white are X ≈ 0.95, Y = 1.0, Z ≈ 1.09.
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - The X component, must be in range [0, 1]
+    /// * `y` - The Y component (luminance), must be in range [0, 1]  
+    /// * `z` - The Z component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component is outside the range [0, 1].
     pub fn new(x: T, y: T, z: T) -> Result<Self> {
-        Self::validate_component(x, "x")?;
-        Self::validate_component(y, "y")?;
-        Self::validate_component(z, "z")?;
+        validate_unit_component(x, "x")?;
+        validate_unit_component(y, "y")?;
+        validate_unit_component(z, "z")?;
 
         Ok(Self { x, y, z })
-    }
-
-    /// Validate a single component is in range [0, 1].
-    fn validate_component(value: T, name: &str) -> Result<()> {
-        if value < T::zero() || value > T::one() {
-            return Err(ChromaticError::InvalidColour(format!(
-                "{} component ({}) must be positive",
-                name,
-                value.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
-        Ok(())
     }
 
     /// Get the `x` component.
@@ -63,46 +62,96 @@ impl<T: Float + Send + Sync> Xyz<T> {
     }
 
     /// Set the `x` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - The new X value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_x(&mut self, x: T) -> Result<()> {
-        Self::validate_component(x, "x")?;
+        validate_unit_component(x, "x")?;
         self.x = x;
         Ok(())
     }
 
     /// Set the `y` component (luminance).
+    ///
+    /// # Arguments
+    ///
+    /// * `y` - The new Y value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_y(&mut self, y: T) -> Result<()> {
-        Self::validate_component(y, "y")?;
+        validate_unit_component(y, "y")?;
         self.y = y;
         Ok(())
     }
 
     /// Set the `z` component.
+    ///
+    /// # Arguments
+    ///
+    /// * `z` - The new Z value, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is outside the range [0, 1].
     pub fn set_z(&mut self, z: T) -> Result<()> {
-        Self::validate_component(z, "z")?;
+        validate_unit_component(z, "z")?;
+        self.z = z;
+        Ok(())
+    }
+
+    /// Set all components at once with validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - The X component, must be in range [0, 1]
+    /// * `y` - The Y component (luminance), must be in range [0, 1]
+    /// * `z` - The Z component, must be in range [0, 1]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any component is outside the range [0, 1].
+    pub fn set_components(&mut self, x: T, y: T, z: T) -> Result<()> {
+        validate_unit_component(x, "x")?;
+        validate_unit_component(y, "y")?;
+        validate_unit_component(z, "z")?;
+
+        self.x = x;
+        self.y = y;
         self.z = z;
         Ok(())
     }
 
     /// Create an XYZ colour representing the D65 standard illuminant (daylight, 6504K).
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
+    /// Returns an error if constant conversion fails.
     pub fn d65_reference_white() -> Result<Self> {
         Self::new(safe_constant(0.95047)?, safe_constant(1.0)?, safe_constant(1.08883)?)
     }
 
     /// Create an XYZ colour representing the D50 standard illuminant (horizon light, 5003K).
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// This function will not panic.
+    /// Returns an error if constant conversion fails.
     pub fn d50_reference_white() -> Result<Self> {
         Self::new(safe_constant(0.96422)?, safe_constant(1.0)?, safe_constant(0.82521)?)
     }
 
     /// Get XYZ values relative to D65 reference white.
     /// Returns (X/Xn, Y/Yn, Z/Zn)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reference white calculation fails.
     pub fn relative_to_white(&self) -> Result<(T, T, T)> {
         let white = Self::d65_reference_white()?;
         Ok((self.x / white.x, self.y / white.y, self.z / white.z))
@@ -146,12 +195,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Xyz<T> {
     /// Linear interpolate between two XYZ colours.
     /// Note: Prefer Lab for perceptually uniform interpolation.
     fn lerp(lhs: &Self, rhs: &Self, t: T) -> Result<Self> {
-        if t < T::zero() || t > T::one() {
-            return Err(ChromaticError::Interpolation(format!(
-                "Interpolation factor ({}) must be between 0 and 1",
-                t.to_f64().unwrap_or(f64::NAN)
-            )));
-        }
+        validate_interpolation_factor(t)?;
 
         Self::new(
             lhs.x * (T::one() - t) + rhs.x * t,
@@ -285,12 +329,7 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
 impl<T: Float + Send + Sync> Display for Xyz<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let i255 = safe_constant::<i32, T>(255_i32)?;
-
-        let red = (rgb.red() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let green = (rgb.green() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-        let blue = (rgb.blue() * i255).round().to_u8().ok_or(std::fmt::Error)?;
-
-        write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
+        let color_string = format_terminal_color(rgb.red(), rgb.green(), rgb.blue(), PRINT_BLOCK)?;
+        write!(fmt, "{}", color_string)
     }
 }
