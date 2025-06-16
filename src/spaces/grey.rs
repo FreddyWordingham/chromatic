@@ -92,7 +92,7 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
     fn to_hex(&self) -> Result<String> {
         let scale = safe_constant(255.0)?;
         let grey = component_to_u8(self.grey, "grey", scale)?;
-        Ok(format!("#{:02X}", grey))
+        Ok(format!("#{grey:02X}"))
     }
 
     fn from_bytes(bytes: [u8; 1]) -> Result<Self> {
@@ -194,6 +194,6 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
 impl<T: Float + Send + Sync> Display for Grey<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let color_string = format_terminal_color(self.grey, self.grey, self.grey, PRINT_BLOCK)?;
-        write!(fmt, "{}", color_string)
+        write!(fmt, "{color_string}")
     }
 }

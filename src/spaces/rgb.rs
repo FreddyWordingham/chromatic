@@ -185,7 +185,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
         let green = component_to_u8(self.green, "green", scale)?;
         let blue = component_to_u8(self.blue, "blue", scale)?;
 
-        Ok(format!("#{:02X}{:02X}{:02X}", red, green, blue))
+        Ok(format!("#{red:02X}{green:02X}{blue:02X}"))
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
@@ -228,6 +228,10 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
         GreyAlpha::new((self.red + self.green + self.blue) / safe_constant(3.0)?, T::one())
     }
 
+    #[expect(
+        clippy::similar_names,
+        reason = "f60 and f360 are used for hue calculations. Their names are similar only because they represent different numerical constants."
+    )]
     fn to_hsl(&self) -> Result<Hsl<T>> {
         let r = self.red();
         let g = self.green();
@@ -399,6 +403,6 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
 impl<T: Float + Send + Sync> Display for Rgb<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let color_string = format_terminal_color(self.red, self.green, self.blue, PRINT_BLOCK)?;
-        write!(fmt, "{}", color_string)
+        write!(fmt, "{color_string}")
     }
 }

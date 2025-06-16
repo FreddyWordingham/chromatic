@@ -229,7 +229,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Srgb<T> {
         let green = component_to_u8(self.green, "green", scale)?;
         let blue = component_to_u8(self.blue, "blue", scale)?;
 
-        Ok(format!("#{:02X}{:02X}{:02X}", red, green, blue))
+        Ok(format!("#{red:02X}{green:02X}{blue:02X}"))
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
@@ -352,6 +352,6 @@ impl<T: Float + Send + Sync> Convert<T> for Srgb<T> {
 impl<T: Float + Send + Sync> Display for Srgb<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let color_string = format_terminal_color(self.red, self.green, self.blue, PRINT_BLOCK)?;
-        write!(fmt, "{}", color_string)
+        write!(fmt, "{color_string}")
     }
 }

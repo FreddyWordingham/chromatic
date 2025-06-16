@@ -181,7 +181,7 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Hsl<T> {
 
         // Validate hue calculation didn't produce invalid values
         if !hue.is_finite() {
-            return Err(InterpolationError::HueInterpolationError {
+            return Err(InterpolationError::HueInterpolation {
                 hue1: lhs.hue.to_f64().unwrap_or(f64::NAN),
                 hue2: rhs.hue.to_f64().unwrap_or(f64::NAN),
             }
@@ -312,6 +312,6 @@ impl<T: Float + Send + Sync> Display for Hsl<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
         let color_string = format_terminal_color(rgb.red(), rgb.green(), rgb.blue(), PRINT_BLOCK)?;
-        write!(fmt, "{}", color_string)
+        write!(fmt, "{color_string}")
     }
 }

@@ -23,8 +23,11 @@ pub enum InterpolationError {
     InvalidWeightSum,
 
     #[error("Mathematical error during interpolation: {operation}")]
-    MathError { operation: String },
+    Math { operation: String },
+
+    #[error("Invalid gradient steps: {steps} (minimum 2 required)")]
+    InvalidGradientSteps { steps: usize },
 
     #[error("Hue interpolation failed: cannot determine shortest path for values {hue1} and {hue2}")]
-    HueInterpolationError { hue1: f64, hue2: f64 },
+    HueInterpolation { hue1: f64, hue2: f64 },
 }

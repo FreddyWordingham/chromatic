@@ -281,7 +281,7 @@ where
     ///
     /// # Errors
     ///
-    /// Returns an error if sampling fails or if num_samples is 0.
+    /// Returns an error if sampling fails or if `num_samples` is 0.
     pub fn sample_n(&self, num_samples: usize) -> Result<Vec<C>> {
         if num_samples == 0 {
             return Err(ColourMapError::InvalidSamplingPosition { position: 0.0 }.into());

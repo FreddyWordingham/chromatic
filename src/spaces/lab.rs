@@ -335,6 +335,6 @@ impl<T: Float + Send + Sync> Display for Lab<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
         let color_string = format_terminal_color(rgb.red(), rgb.green(), rgb.blue(), PRINT_BLOCK)?;
-        write!(fmt, "{}", color_string)
+        write!(fmt, "{color_string}")
     }
 }

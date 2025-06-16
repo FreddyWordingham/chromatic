@@ -64,7 +64,7 @@
 #![deny(clippy::complexity)]
 #![deny(clippy::correctness)]
 #![deny(clippy::nursery)]
-// #![deny(clippy::pedantic)]
+#![deny(clippy::pedantic)]
 #![deny(clippy::perf)]
 // #![deny(clippy::restriction)]
 #![deny(clippy::style)]

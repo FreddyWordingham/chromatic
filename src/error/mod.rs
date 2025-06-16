@@ -127,7 +127,7 @@ pub fn safe_constant<S: Copy + Send + Sync + Display + ToPrimitive, T: Send + Sy
         NumericError::TypeConversionFailed {
             from: type_name::<S>().to_string(),
             to: type_name::<T>().to_string(),
-            reason: format!("Failed to convert constant: {}", value),
+            reason: format!("Failed to convert constant: {value}"),
         }
         .into()
     })
@@ -199,11 +199,12 @@ pub fn parse_hex_component(hex: &str, component_name: &str) -> Result<u8> {
 
 /// Normalize hue to [0, 360) range with overflow protection.
 pub fn normalize_hue<T: Float + Send + Sync>(mut hue: T) -> Result<T> {
+    const MAX_ITERATIONS: usize = 1000;
+
     let f360 = safe_constant(360.0)?;
 
     // Handle potential infinite loops by limiting iterations
     let mut iterations = 0;
-    const MAX_ITERATIONS: usize = 1000;
 
     while hue >= f360 && iterations < MAX_ITERATIONS {
         hue = hue - f360;
@@ -235,5 +236,5 @@ pub fn format_terminal_color<T: Float + Send + Sync>(red: T, green: T, blue: T, 
     let g = component_to_u8(green, "green", scale)?;
     let b = component_to_u8(blue, "blue", scale)?;
 
-    Ok(format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, symbol))
+    Ok(format!("\x1b[38;2;{r};{g};{b}m{symbol}\x1b[0m"))
 }
