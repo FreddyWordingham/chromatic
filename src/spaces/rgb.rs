@@ -1,11 +1,14 @@
 //! RGB colour representation.
 
 use num_traits::Float;
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    any::type_name,
+    fmt::{Display, Formatter, Result as FmtResult},
+};
 
 use crate::{
     config::PRINT_BLOCK,
-    error::{ChromaticError, Result, safe_constant},
+    error::{ChromaticError, NumericError, Result, safe_constant},
     spaces::{Grey, GreyAlpha, Hsl, HslAlpha, Hsv, HsvAlpha, Lab, LabAlpha, RgbAlpha, Srgb, SrgbAlpha, Xyz, XyzAlpha},
     traits::{Colour, Convert},
 };
@@ -118,20 +121,16 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
             .trim()
             .strip_prefix('#')
             .ok_or_else(|| ChromaticError::ColourParsing("Missing '#' prefix".to_string()))?;
-        let mut chars = components.chars();
+
         let (red, green, blue) = match components.len() {
             // Short form: #RGB
             3 => {
-                let r_digit = chars.next().unwrap();
-                let g_digit = chars.next().unwrap();
-                let b_digit = chars.next().unwrap();
-
-                let red = u8::from_str_radix(&r_digit.to_string(), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {e}")))?;
-                let green = u8::from_str_radix(&g_digit.to_string(), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {e}")))?;
-                let blue = u8::from_str_radix(&b_digit.to_string(), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex digit: {e}")))?;
+                let red = u8::from_str_radix(&components[0..1], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
+                let green = u8::from_str_radix(&components[1..2], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
+                let blue = u8::from_str_radix(&components[2..3], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex digit: {err}")))?;
 
                 // Expand short form (e.g., #F00 becomes #FF0000)
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
@@ -150,19 +149,12 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
             }
             // Long form: #RRGGBB
             6 => {
-                let r1 = chars.next().unwrap().to_string();
-                let r2 = chars.next().unwrap().to_string();
-                let g1 = chars.next().unwrap().to_string();
-                let g2 = chars.next().unwrap().to_string();
-                let b1 = chars.next().unwrap().to_string();
-                let b2 = chars.next().unwrap().to_string();
-
-                let red = u8::from_str_radix(&format!("{r1}{r2}"), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex red: {e}")))?;
-                let green = u8::from_str_radix(&format!("{g1}{g2}"), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex green: {e}")))?;
-                let blue = u8::from_str_radix(&format!("{b1}{b2}"), 16)
-                    .map_err(|e| ChromaticError::ColourParsing(format!("Invalid hex blue: {e}")))?;
+                let red = u8::from_str_radix(&components[0..2], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex red: {err}")))?;
+                let green = u8::from_str_radix(&components[2..4], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex green: {err}")))?;
+                let blue = u8::from_str_radix(&components[4..6], 16)
+                    .map_err(|err| ChromaticError::ColourParsing(format!("Invalid hex blue: {err}")))?;
 
                 let scaled_red = T::from(red).ok_or_else(|| ChromaticError::Math("Failed to convert red value".to_string()))?
                     / safe_constant(255)?;
@@ -181,26 +173,78 @@ impl<T: Float + Send + Sync> Colour<T, 3> for Rgb<T> {
     }
 
     fn to_hex(&self) -> Result<String> {
-        let max = safe_constant(255_u8)?;
-        let red = (self.red * max).round().to_u8().unwrap();
-        let green = (self.green * max).round().to_u8().unwrap();
-        let blue = (self.blue * max).round().to_u8().unwrap();
+        let u255 = safe_constant(255_u8)?;
+        let scaled_red = (self.red * u255).round();
+        let scaled_green = (self.green * u255).round();
+        let scaled_blue = (self.blue * u255).round();
+
+        let red = scaled_red.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Red value {} is outside u8 range [0, 255]",
+                scaled_red.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+        let green = scaled_green.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Green value {} is outside u8 range [0, 255]",
+                scaled_green.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+        let blue = scaled_blue.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Blue value {} is outside u8 range [0, 255]",
+                scaled_blue.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+
         Ok(format!("#{red:02X}{green:02X}{blue:02X}"))
     }
 
     fn from_bytes(bytes: [u8; 3]) -> Result<Self> {
-        let max = safe_constant(255_u8)?;
-        let red = T::from(bytes[0]).unwrap() / max;
-        let green = T::from(bytes[1]).unwrap() / max;
-        let blue = T::from(bytes[2]).unwrap() / max;
+        let u255 = safe_constant::<u8, T>(255_u8)?;
+        let red = safe_constant::<u8, T>(bytes[0])? / u255;
+        let green = safe_constant::<u8, T>(bytes[1])? / u255;
+        let blue = safe_constant::<u8, T>(bytes[2])? / u255;
         Self::new(red, green, blue)
     }
 
     fn to_bytes(self) -> Result<[u8; 3]> {
-        let max = safe_constant(255_u8)?;
-        let red = (self.red * max).round().to_u8().unwrap();
-        let green = (self.green * max).round().to_u8().unwrap();
-        let blue = (self.blue * max).round().to_u8().unwrap();
+        let u255: T = safe_constant::<u8, T>(255_u8)?;
+        let scaled_red = (self.red * u255).round();
+        let scaled_green = (self.green * u255).round();
+        let scaled_blue = (self.blue * u255).round();
+
+        let red = scaled_red.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Red value {} is outside u8 range [0, 255]",
+                scaled_red.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+        let green = scaled_green.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Green value {} is outside u8 range [0, 255]",
+                scaled_green.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+        let blue = scaled_blue.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
+            from: type_name::<T>().to_string(),
+            to: "u8".to_string(),
+            reason: format!(
+                "Blue value {} is outside u8 range [0, 255]",
+                scaled_blue.to_f64().unwrap_or(f64::NAN)
+            ),
+        })?;
+
         Ok([red, green, blue])
     }
 
@@ -402,10 +446,12 @@ impl<T: Float + Send + Sync> Convert<T> for Rgb<T> {
 
 impl<T: Float + Send + Sync> Display for Rgb<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let max = T::from(255_i32).unwrap();
-        let red = (self.red * max).round().to_u8().unwrap();
-        let green = (self.green * max).round().to_u8().unwrap();
-        let blue = (self.blue * max).round().to_u8().unwrap();
+        let i255 = safe_constant::<i32, T>(255_i32)?;
+
+        let red = (self.red * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let green = (self.green * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let blue = (self.blue * i255).round().to_u8().ok_or(std::fmt::Error)?;
+
         write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
     }
 }

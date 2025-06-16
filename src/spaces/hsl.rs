@@ -319,10 +319,12 @@ impl<T: Float + Send + Sync> Convert<T> for Hsl<T> {
 impl<T: Float + Send + Sync> Display for Hsl<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let max = safe_constant(255_i32)?;
-        let red = (rgb.red() * max).round().to_u8().unwrap();
-        let green = (rgb.green() * max).round().to_u8().unwrap();
-        let blue = (rgb.blue() * max).round().to_u8().unwrap();
+        let i255 = safe_constant::<i32, T>(255_i32)?;
+
+        let red = (rgb.red() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let green = (rgb.green() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let blue = (rgb.blue() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+
         write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
     }
 }

@@ -77,7 +77,7 @@ where
             return Ok(self.colours[0].clone());
         }
         if position >= T::one() {
-            return Ok(self.colours.last().unwrap().clone());
+            return Ok(self.colours[self.colours.len() - 1].clone());
         }
 
         // Calculate which segment we're in

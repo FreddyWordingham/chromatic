@@ -29,8 +29,8 @@ macro_rules! impl_transparent_colour {
                         // Expand from single hex digit (e.g., F -> FF)
                         let alpha = T::from(alpha_val)
                             .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
-                            * T::from(17).unwrap()
-                            / T::from(255).unwrap();
+                            * $crate::error::safe_constant(17)?
+                            / $crate::error::safe_constant(255)?;
 
                         Self::new_colour_with_alpha(colour, alpha)
                     }
@@ -49,7 +49,7 @@ macro_rules! impl_transparent_colour {
 
                         let alpha = T::from(alpha_val)
                             .ok_or_else(|| $crate::error::ChromaticError::Math("Failed to convert alpha value".to_string()))?
-                            / T::from(255).unwrap();
+                            / $crate::error::safe_constant(255)?;
 
                         Self::new_colour_with_alpha(colour, alpha)
                     }
@@ -60,9 +60,20 @@ macro_rules! impl_transparent_colour {
             }
 
             fn to_hex(&self) -> Result<String> {
-                let max = T::from(255_u8).unwrap();
+                let u255 = $crate::error::safe_constant(255_u8)?;
                 let colour_hex = self.colour().to_hex()?;
-                let alpha = (self.alpha() * max).round().to_u8().unwrap();
+                let scaled_alpha = (self.alpha() * u255).round();
+
+                let alpha = scaled_alpha
+                    .to_u8()
+                    .ok_or_else(|| $crate::error::NumericError::TypeConversionFailed {
+                        from: std::any::type_name::<T>().to_string(),
+                        to: "u8".to_string(),
+                        reason: format!(
+                            "Alpha value {} is outside u8 range [0, 255]",
+                            scaled_alpha.to_f64().unwrap_or(f64::NAN)
+                        ),
+                    })?;
 
                 // Remove # from colour hex and add alpha
                 let colour_part: String = colour_hex.chars().skip(1).collect();
@@ -70,7 +81,7 @@ macro_rules! impl_transparent_colour {
             }
 
             fn from_bytes(bytes: [u8; $base_components + 1]) -> Result<Self> {
-                let max = T::from(255_u8).unwrap();
+                let u255 = $crate::error::safe_constant::<u8, T>(255_u8)?;
 
                 // Extract base colour bytes
                 let mut base_bytes = [0_u8; $base_components];
@@ -79,15 +90,27 @@ macro_rules! impl_transparent_colour {
                 }
 
                 let colour = <$base>::from_bytes(base_bytes)?;
-                let alpha = T::from(bytes[$base_components]).unwrap() / max;
+                let alpha = $crate::error::safe_constant::<u8, T>(bytes[$base_components])? / u255;
 
                 Self::new_colour_with_alpha(colour, alpha)
             }
 
             fn to_bytes(self) -> Result<[u8; $base_components + 1]> {
-                let max = T::from(255_u8).unwrap();
+                let u255 = $crate::error::safe_constant::<u8, T>(255_u8)?;
+
                 let base_bytes = self.colour().to_bytes()?;
-                let alpha = (self.alpha() * max).round().to_u8().unwrap();
+                let scaled_alpha = (self.alpha() * u255).round();
+
+                let alpha = scaled_alpha
+                    .to_u8()
+                    .ok_or_else(|| $crate::error::NumericError::TypeConversionFailed {
+                        from: std::any::type_name::<T>().to_string(),
+                        to: "u8".to_string(),
+                        reason: format!(
+                            "Alpha value {} is outside u8 range [0, 255]",
+                            scaled_alpha.to_f64().unwrap_or(f64::NAN)
+                        ),
+                    })?;
 
                 // Create result array
                 let mut result = [0_u8; $base_components + 1];

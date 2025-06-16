@@ -76,27 +76,25 @@ impl<T: Float + Send + Sync> XyzAlpha<T> {
     }
 
     /// Set the `x` component.
-    pub fn set_x(&mut self, x: T) {
-        self.colour.set_x(x);
+    pub fn set_x(&mut self, x: T) -> Result<()> {
+        self.colour.set_x(x)
     }
 
     /// Set the `y` component.
-    pub fn set_y(&mut self, y: T) {
-        self.colour.set_y(y);
+    pub fn set_y(&mut self, y: T) -> Result<()> {
+        self.colour.set_y(y)
     }
 
     /// Set the `z` component.
-    pub fn set_z(&mut self, z: T) {
-        self.colour.set_z(z);
+    pub fn set_z(&mut self, z: T) -> Result<()> {
+        self.colour.set_z(z)
     }
 
     /// Set the `alpha` component.
-    pub fn set_alpha(&mut self, alpha: T) {
-        debug_assert!(
-            alpha >= T::zero() && alpha <= T::one(),
-            "Alpha component must be in range [0, 1]."
-        );
+    pub fn set_alpha(&mut self, alpha: T) -> Result<()> {
+        Self::validate_component(alpha, "alpha")?;
         self.alpha = alpha;
+        Ok(())
     }
 }
 

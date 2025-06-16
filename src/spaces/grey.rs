@@ -88,8 +88,8 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
     }
 
     fn to_hex(&self) -> Result<String> {
-        let max: T = safe_constant::<i32, T>(255_i32)?;
-        let scaled = (self.grey * max).round();
+        let u255: T = safe_constant::<u8, T>(255_u8)?;
+        let scaled = (self.grey * u255).round();
         let grey = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
             from: type_name::<T>().to_string(),
             to: "u8".to_string(),
@@ -101,14 +101,14 @@ impl<T: Float + Send + Sync> Colour<T, 1> for Grey<T> {
         Ok(format!("#{grey:02X}"))
     }
     fn from_bytes(bytes: [u8; 1]) -> Result<Self> {
-        let max = safe_constant::<u8, T>(255_u8)?;
-        let value = safe_constant::<u8, T>(bytes[0])? / max;
+        let u255 = safe_constant::<u8, T>(255_u8)?;
+        let value = safe_constant::<u8, T>(bytes[0])? / u255;
         Self::new(value)
     }
 
     fn to_bytes(self) -> Result<[u8; 1]> {
-        let max: T = safe_constant::<u8, T>(255_u8)?;
-        let scaled = (self.grey * max).round();
+        let u255: T = safe_constant::<u8, T>(255_u8)?;
+        let scaled = (self.grey * u255).round();
         let value = scaled.to_u8().ok_or_else(|| NumericError::TypeConversionFailed {
             from: type_name::<T>().to_string(),
             to: "u8".to_string(),
@@ -212,8 +212,10 @@ impl<T: Float + Send + Sync> Convert<T> for Grey<T> {
 
 impl<T: Float + Send + Sync> Display for Grey<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
-        let max = safe_constant(255_i32)?;
-        let value = (self.grey * max).round().to_u8().unwrap();
+        let i255 = safe_constant::<i32, T>(255_i32)?;
+
+        let value = (self.grey * i255).round().to_u8().ok_or(std::fmt::Error)?;
+
         write!(fmt, "\x1b[38;2;{value};{value};{value}m{PRINT_BLOCK}\x1b[0m")
     }
 }

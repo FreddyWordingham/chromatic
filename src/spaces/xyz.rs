@@ -39,7 +39,7 @@ impl<T: Float + Send + Sync> Xyz<T> {
     fn validate_component(value: T, name: &str) -> Result<()> {
         if value < T::zero() || value > T::one() {
             return Err(ChromaticError::InvalidColour(format!(
-                "{} component ({}) must be between positive",
+                "{} component ({}) must be positive",
                 name,
                 value.to_f64().unwrap_or(f64::NAN)
             )));
@@ -63,21 +63,24 @@ impl<T: Float + Send + Sync> Xyz<T> {
     }
 
     /// Set the `x` component.
-    pub fn set_x(&mut self, x: T) {
-        debug_assert!(x >= T::zero(), "X component should be non-negative.");
+    pub fn set_x(&mut self, x: T) -> Result<()> {
+        Self::validate_component(x, "x")?;
         self.x = x;
+        Ok(())
     }
 
     /// Set the `y` component (luminance).
-    pub fn set_y(&mut self, y: T) {
-        debug_assert!(y >= T::zero(), "Y component should be non-negative.");
+    pub fn set_y(&mut self, y: T) -> Result<()> {
+        Self::validate_component(y, "y")?;
         self.y = y;
+        Ok(())
     }
 
     /// Set the `z` component.
-    pub fn set_z(&mut self, z: T) {
-        debug_assert!(z >= T::zero(), "Z component should be non-negative.");
+    pub fn set_z(&mut self, z: T) -> Result<()> {
+        Self::validate_component(z, "z")?;
         self.z = z;
+        Ok(())
     }
 
     /// Create an XYZ colour representing the D65 standard illuminant (daylight, 6504K).
@@ -282,10 +285,12 @@ impl<T: Float + Send + Sync> Convert<T> for Xyz<T> {
 impl<T: Float + Send + Sync> Display for Xyz<T> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         let rgb = self.to_rgb()?;
-        let max = safe_constant(255_i32)?;
-        let red = (rgb.red() * max).round().to_u8().unwrap();
-        let green = (rgb.green() * max).round().to_u8().unwrap();
-        let blue = (rgb.blue() * max).round().to_u8().unwrap();
+        let i255 = safe_constant::<i32, T>(255_i32)?;
+
+        let red = (rgb.red() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let green = (rgb.green() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+        let blue = (rgb.blue() * i255).round().to_u8().ok_or(std::fmt::Error)?;
+
         write!(fmt, "\x1b[38;2;{red};{green};{blue}m{PRINT_BLOCK}\x1b[0m")
     }
 }
